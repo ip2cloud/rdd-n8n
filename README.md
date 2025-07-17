@@ -28,8 +28,8 @@ sudo ./install-simple.sh
 ### 3️⃣ Scripts auxiliares inclusos:
 
 - 🔧 `./debug.sh` - Diagnóstico de problemas
+- 🗑️ `./cleanup.sh` - Limpeza rápida
 - 🗑️ `./uninstall.sh` - Desinstalação completa
-- 🛠️ `./fix-linux.sh` - Correção de quebras de linha
 
 ### 4️⃣ Tempo: ~3 minutos
 
@@ -99,6 +99,15 @@ No Portainer, vá em **Stacks > Add Stack** e crie:
 - Exibe logs dos serviços
 - Comandos para deploy manual
 
+### Limpeza Rápida
+```bash
+./cleanup.sh
+```
+- Remove stacks principais (traefik, portainer)
+- Limpa sistema Docker
+- Desativa Docker Swarm
+- Rápido e direto
+
 ### Desinstalação Completa
 ```bash
 sudo ./uninstall.sh
@@ -108,13 +117,6 @@ sudo ./uninstall.sh
 - Desativa Docker Swarm
 - Remove redes overlay
 - Mantém backup do .env
-
-### Correção de Arquivos
-```bash
-./fix-linux.sh
-```
-- Corrige quebras de linha Windows→Linux
-- Torna scripts executáveis
 
 ## 🔧 Variáveis de Ambiente
 
@@ -189,9 +191,9 @@ source .env              # Carregar variáveis
 ### Script não executa?
 
 ```bash
-# Corrija as quebras de linha
-sed -i 's/\r$//' install-simple.sh
-chmod +x install-simple.sh
+# Corrija quebras de linha e permissões
+sed -i 's/\r$//' *.sh
+chmod +x *.sh
 ```
 
 ### Problemas na instalação?
@@ -228,6 +230,15 @@ docker stack deploy -c portainer/portainer.yaml portainer
 ```
 
 ## 🗑️ Desinstalação
+
+### Limpeza rápida?
+
+```bash
+# Limpeza simples e rápida
+./cleanup.sh
+
+# Remove: stacks principais, limpa sistema, desativa swarm
+```
 
 ### Remover tudo completamente?
 

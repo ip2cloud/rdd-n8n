@@ -32,7 +32,9 @@ This approach gives users more control and visibility over what's being deployed
 
 ### Documentation
 - `README.md` - User-facing installation guide
-- `fix-linux.sh` - Utility to fix line endings for Linux
+- `debug.sh` - Diagnostic script for troubleshooting
+- `cleanup.sh` - Quick cleanup script
+- `uninstall.sh` - Complete uninstallation script
 
 ## Architecture
 

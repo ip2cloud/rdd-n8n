@@ -8,11 +8,10 @@ services:
       # Habilitar API e Dashboard
       - "--api.dashboard=true"
       - "--api.insecure=false"
-      # Configurar providers
-      - "--providers.docker=true"
-      - "--providers.docker.swarmMode=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=network_swarm_public"
+      # Configurar providers (Swarm v3)
+      - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
+      - "--providers.swarm.exposedbydefault=false"
+      - "--providers.swarm.network=network_swarm_public"
       # Configurar entrypoints
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
