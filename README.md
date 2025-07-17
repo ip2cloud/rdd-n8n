@@ -14,7 +14,7 @@
 git clone <url-do-repositorio>
 cd install
 chmod +x install-simple.sh
-sudo  ach
+sudo ./install-simple.sh
 ```
 
 ### 2️⃣ O script vai instalar:
@@ -25,7 +25,13 @@ sudo  ach
 - ✅ Criar volumes e redes
 - ✅ Gerar arquivo .env com senhas
 
-### 3️⃣ Tempo: ~3 minutos
+### 3️⃣ Scripts auxiliares inclusos:
+
+- 🔧 `./debug.sh` - Diagnóstico de problemas
+- 🗑️ `./uninstall.sh` - Desinstalação completa
+- 🛠️ `./fix-linux.sh` - Correção de quebras de linha
+
+### 4️⃣ Tempo: ~3 minutos
 
 ## 🎛️ ETAPA 2: Deploy via Portainer
 
@@ -80,6 +86,35 @@ No Portainer, vá em **Stacks > Add Stack** e crie:
 
 - `fluxos.SEU-DOMINIO.com` → IP do servidor
 - `webhook.SEU-DOMINIO.com` → IP do servidor
+
+## 🔧 Scripts Auxiliares
+
+### Debug e Diagnóstico
+```bash
+./debug.sh
+```
+- Verifica status do Docker Swarm
+- Lista nodes, redes e volumes
+- Mostra stacks e serviços
+- Exibe logs dos serviços
+- Comandos para deploy manual
+
+### Desinstalação Completa
+```bash
+sudo ./uninstall.sh
+```
+- Remove todos os stacks
+- Apaga volumes (⚠️ DADOS PERDIDOS!)
+- Desativa Docker Swarm
+- Remove redes overlay
+- Mantém backup do .env
+
+### Correção de Arquivos
+```bash
+./fix-linux.sh
+```
+- Corrige quebras de linha Windows→Linux
+- Torna scripts executáveis
 
 ## 🔧 Variáveis de Ambiente
 
@@ -146,6 +181,7 @@ docker service ls          # Ver serviços rodando
 docker-ctop               # Monitor em tempo real
 docker service logs n8n   # Ver logs
 source .env              # Carregar variáveis
+./debug.sh               # Script de diagnóstico
 ```
 
 ## ❓ Problemas?
@@ -158,19 +194,54 @@ sed -i 's/\r$//' install-simple.sh
 chmod +x install-simple.sh
 ```
 
+### Problemas na instalação?
+
+```bash
+# Execute o script de diagnóstico
+./debug.sh
+
+# Mostra status de tudo:
+# - Docker Swarm
+# - Nodes do cluster
+# - Redes e volumes
+# - Stacks e serviços
+# - Logs dos serviços
+```
+
 ### Serviços não sobem?
 
 ```bash
 # Verifique os logs
 docker service ls
 docker service logs nome_do_servico
+
+# Ou use o diagnóstico completo
+./debug.sh
 ```
 
-### Precisa desinstalar tudo?
+### Deploy manual do Portainer?
+
+```bash
+# Se o Portainer não subir automaticamente
+docker volume create portainer_data
+docker stack deploy -c portainer/portainer.yaml portainer
+```
+
+## 🗑️ Desinstalação
+
+### Remover tudo completamente?
 
 ```bash
 # Script de desinstalação completa
 sudo ./uninstall.sh
+
+# Remove:
+# - Todos os stacks e serviços
+# - Todos os volumes (DADOS PERDIDOS!)
+# - Docker Swarm
+# - Redes overlay
+# - Opção: imagens não utilizadas
+# - Mantém: arquivo .env como backup
 ```
 
 ### Precisa reinstalar?
