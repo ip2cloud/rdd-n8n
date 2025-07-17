@@ -1,0 +1,62 @@
+version: "3.7"
+# definição dos serviços do stack
+services:
+  # definição dos Serviços
+  postgres:
+    # imagem do postgres
+    image: postgres:16
+    # Define o Hostname
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    # configura a rede do serviço
+    networks:
+    - network_swarm_databases
+    # entrypoint de configuração do postgres
+    entrypoint: docker-entrypoint.sh
+    # commando que irá executar o postgres
+    command: [ postgres, --max_connections=200, --wal_level=minimal, --max_wal_senders=0, --port=5432 ]
+    # configura a porta do serviço do postgres para acesso externo
+    #ports:
+    #  - 5432:5432
+    # configura o volume do serviço do postgres
+    volumes:
+    # para salvar no volume do Docker
+    - postgres_data:/var/lib/postgresql/data
+    # Para salvar num volume externo anexado na VPS
+    # - /mnt/VOLUME/pasta:/var/lib/postgresql/data
+    # configura as variáveis de ambiente do serviço do postgres
+    environment:
+    # Define a senha do usuario postgres
+    - POSTGRES_PASSWORD=lWTgxiVOht0K80mQpdY5pYA
+    # Fix para a versão 16.1 do postgres
+    - POSTGRES_INITDB_ARGS="--auth-host=scram-sha-256"
+    # define o modo de deploy do container
+    deploy:
+      # configura o modo de deploy do serviço do postgres
+      mode: replicated
+      # configura o numero de replicas do serviço do postgres (1 é o padrão)
+      replicas: 1
+      # Define a estratégia de deploy do serviço
+      placement:
+        constraints:
+        # você pode definir aonde o serviço irá rodar (worker ou manager)
+        # aqui você pode definir que quer que rode no manager
+        - node.hostname == mgt01htz
+        # ou pode escolher um node específico pelo hostname
+        #- node.hostname == database01
+      resources:
+        # configura os limites de recursos do serviço do postgres
+        limits:
+          # configura o limite de CPU do serviço do postgres
+          cpus: "1"
+          # configura o limite de memória do serviço do postgres
+          memory: 1024M
+
+volumes:
+  postgres_data:
+    external: true
+    name: postgres_data
+
+networks:
+  network_swarm_databases:
+    external: true
+    name: network_swarm_databases

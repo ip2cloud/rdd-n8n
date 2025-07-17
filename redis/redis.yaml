@@ -1,0 +1,49 @@
+version: "3.7"
+services:
+  # Definição do Serviço do Redis
+  redis:
+    # imagem do redis
+    image: redis:7
+    # Define o hostname do container
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    # Define o comando de inicialização do serviço
+    command: redis-server --appendonly yes --port 6379
+    # se desejar usar o redis com senha
+    # command: redis-server --appendonly yes --port 6379 --requirepass SENHA
+    # configura a rede do serviço
+    networks:
+    - network_swarm_databases
+    # Configura as portas do serviço
+    # ports:
+    # - 6379:6379
+    # Configura o volume do serviço
+    volumes:
+    - redis_data:/data
+    # Define o modo de deploy do serviço
+    deploy:
+      # Define o modo de replicação
+      mode: replicated
+      # Define a quantidade de réplicas do serviço
+      replicas: 1
+      # Define a estratégia de deploy do serviço
+      placement:
+        constraints:
+        #- node.role == manager
+        - node.hostname == acene
+      resources:
+        # Define os limites de recursos do serviço
+        limits:
+          # Define o limite de CPU do serviço
+          cpus: "1"
+          # Define o limite de memória do serviço
+          memory: 1024M
+
+volumes:
+  redis_data:
+    external: true
+    name: redis_data
+
+networks:
+  network_swarm_databases:
+    external: true
+    name: network_swarm_databases
