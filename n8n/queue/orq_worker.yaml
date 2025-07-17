@@ -185,24 +185,7 @@ services:
     #########################################################
     #########################################################
     #########################################################
-    # Modo de envio de e-mail
-    - N8N_EMAIL_MODE=smtp
-    # Configura o Host do SMTP
-    - N8N_SMTP_HOST=smtplw.com.br
-    # Configura a Porta do SMTP
-    - N8N_SMTP_PORT=587
-    # Configura o Usuário do SMTP
-    - N8N_SMTP_USER=felitur
-    # Configura a Senha do SMTP
-    - N8N_SMTP_PASS=UVENXipL0000
-    # Configura o E-mail de envio
-    - N8N_SMTP_SENDER=suporte@envios.ip2sec.com.br
-    # Configura o SSL do SMTP
-    - N8N_SMTP_SSL=false
-    - N8N_UM_EMAIL_TEMPLATES_INVITE=${TEMPLATES_INVITE}
-    # Report de Erros Sentry
-    - N8N_SENTRY_DSN=https://2a30298915e2f7a633dd62811973c6fe@o4508796098314241.ingest.us.sentry.io/4508796115025920
-    - N8N_FRONTEND_SENTRY_DSN=https://2a30298915e2f7a633dd62811973c6fe@o4508796098314241.ingest.us.sentry.io/4508796115025920
+
     # Configura o Modo de Deploy da Aplicação
     deploy:
       # O editor será executado no modo de replicação
