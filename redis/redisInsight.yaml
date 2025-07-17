@@ -26,7 +26,6 @@ services:
       placement:
         constraints:
         - node.role == manager
-        # - node.hostname == worker1
         #resources:
         # Define os limites de recursos do serviço
         #  limits:

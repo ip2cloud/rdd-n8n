@@ -85,8 +85,13 @@ docker service update SERVICE_NAME
 
 ### Remove everything
 ```bash
+# Complete uninstall
+sudo ./uninstall.sh
+
+# Manual cleanup
 docker stack rm $(docker stack ls --format "{{.Name}}")
 docker volume prune -f
+docker swarm leave --force
 ```
 
 ## Important Notes

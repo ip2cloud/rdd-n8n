@@ -3,19 +3,22 @@
 ## ⚡ Instalação em 2 Etapas
 
 ### 🎯 Etapa 1: Preparar o Ambiente (Automática)
+
 ### 🎯 Etapa 2: Deploy dos Serviços (Via Portainer)
 
 ## 📋 ETAPA 1: Preparar o Ambiente
 
 ### 1️⃣ Clone e execute o instalador
+
 ```bash
 git clone <url-do-repositorio>
 cd install
 chmod +x install-simple.sh
-sudo ./install-simple.sh
+sudo  ach
 ```
 
 ### 2️⃣ O script vai instalar:
+
 - ✅ Docker e Docker Swarm
 - ✅ Portainer (gerenciador visual)
 - ✅ Traefik (proxy reverso)
@@ -27,45 +30,54 @@ sudo ./install-simple.sh
 ## 🎛️ ETAPA 2: Deploy via Portainer
 
 ### 1️⃣ Acesse o Portainer
+
 ```
 https://SEU-IP:9443
 ```
+
 - Crie senha do admin no primeiro acesso
 - Conecte ao ambiente local
 
 ### 2️⃣ Deploy dos Stacks
+
 No Portainer, vá em **Stacks > Add Stack** e crie:
 
 #### Stack 1: PostgreSQL
+
 - **Name**: postgres
 - **Build method**: Upload
 - **Upload file**: `postgres16/postgres.yaml`
 - **Environment variables**: Adicione do arquivo .env
 
-#### Stack 2: Redis  
+#### Stack 2: Redis
+
 - **Name**: redis
 - **Build method**: Upload
 - **Upload file**: `redis/redis.yaml`
 
 #### Stack 3: n8n Editor
+
 - **Name**: n8n_editor
 - **Build method**: Upload
 - **Upload file**: `n8n/queue/orq_editor.yaml`
 - **Environment variables**: Adicione do arquivo .env
 
 #### Stack 4: n8n Webhook
+
 - **Name**: n8n_webhook
 - **Build method**: Upload
 - **Upload file**: `n8n/queue/orq_webhook.yaml`
 - **Environment variables**: Adicione do arquivo .env
 
 #### Stack 5: n8n Worker
+
 - **Name**: n8n_worker
 - **Build method**: Upload
 - **Upload file**: `n8n/queue/orq_worker.yaml`
 - **Environment variables**: Adicione do arquivo .env
 
 ### 3️⃣ Configure o DNS
+
 - `fluxos.SEU-DOMINIO.com` → IP do servidor
 - `webhook.SEU-DOMINIO.com` → IP do servidor
 
@@ -109,22 +121,26 @@ O script perguntará apenas 4 coisas:
 ### URLs de acesso:
 
 #### 🎛️ Portainer (Gerenciador Docker):
+
 - **URL**: https://SEU-IP-PUBLICO:9443
 - **Primeiro acesso**: Defina a senha do admin
 - **Função**: Interface visual para gerenciar containers
 
 #### 🔄 n8n (Automação):
+
 - **Editor**: https://fluxos.SEU-DOMINIO.com
 - **Webhooks**: https://webhook.SEU-DOMINIO.com
 - **Login inicial**: Use o email e senha mostrados ao final da instalação
 - **Nota**: O Nginx já está configurado com SSL auto-assinado!
 
 ### Arquivo de configuração:
+
 - Todas as senhas estão em `.env`
 - **GUARDE ESTE ARQUIVO!**
 - Inclui credenciais do admin inicial do n8n
 
 ### Comandos úteis:
+
 ```bash
 docker service ls          # Ver serviços rodando
 docker-ctop               # Monitor em tempo real
@@ -135,6 +151,7 @@ source .env              # Carregar variáveis
 ## ❓ Problemas?
 
 ### Script não executa?
+
 ```bash
 # Corrija as quebras de linha
 sed -i 's/\r$//' install-simple.sh
@@ -142,18 +159,25 @@ chmod +x install-simple.sh
 ```
 
 ### Serviços não sobem?
+
 ```bash
 # Verifique os logs
 docker service ls
 docker service logs nome_do_servico
 ```
 
-### Precisa reinstalar?
+### Precisa desinstalar tudo?
+
 ```bash
-# Remove tudo e instala novamente
-docker stack rm $(docker stack ls --format "{{.Name}}")
-docker volume prune -f
-./install-simple.sh
+# Script de desinstalação completa
+sudo ./uninstall.sh
+```
+
+### Precisa reinstalar?
+
+```bash
+# Após desinstalar, reinstale com:
+sudo ./install-simple.sh
 ```
 
 ---

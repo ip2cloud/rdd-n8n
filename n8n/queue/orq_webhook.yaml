@@ -195,11 +195,8 @@ services:
       replicas: 1
       # Configura o local de execução
       placement:
-        # Você pode rodar o Editor no Manager mesmo pois usa poucos recursos
         constraints:
-        # - node.role == manager
-        # - node.hostname == worker1
-        - node.labels.n8n-webhook == true # nome do label: app, valor do label: workers
+        - node.role == manager
       # Labels do Traefik
       labels:
         - "traefik.enable=true"

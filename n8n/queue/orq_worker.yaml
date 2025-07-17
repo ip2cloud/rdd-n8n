@@ -194,11 +194,8 @@ services:
       replicas: 1
       # Configura o local de execução
       placement:
-        # Você pode rodar o Editor no Manager mesmo pois usa poucos recursos
         constraints:
-        # - node.role == manager
-        # - node.hostname == worker1
-        - node.labels.n8n-worker == true # nome do label: app, valor do label: webhooks
+        - node.role == manager
       resources:
         # Definição dos Limites de Recursos deste Serviço
         limits:

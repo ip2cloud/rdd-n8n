@@ -27,7 +27,7 @@ services:
       mode: replicated
       replicas: 1
       placement:
-        constraints: [ node.hostname == mgt01htz ]
+        constraints: [ node.role == manager ]
 
 networks:
   network_swarm_public:

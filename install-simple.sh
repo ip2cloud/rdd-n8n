@@ -117,6 +117,7 @@ print_info "Criando volumes..."
 docker volume create postgres_data >/dev/null 2>&1 || true
 docker volume create redis_data >/dev/null 2>&1 || true
 docker volume create traefik_certs >/dev/null 2>&1 || true
+docker volume create portainer_data >/dev/null 2>&1 || true
 print_success "Volumes criados"
 
 # 6. Criar arquivo .env

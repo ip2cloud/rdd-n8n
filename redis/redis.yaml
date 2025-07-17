@@ -28,8 +28,7 @@ services:
       # Define a estratégia de deploy do serviço
       placement:
         constraints:
-        #- node.role == manager
-        - node.hostname == acene
+        - node.role == manager
       resources:
         # Define os limites de recursos do serviço
         limits:
