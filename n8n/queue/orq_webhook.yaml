@@ -200,6 +200,14 @@ services:
         # - node.role == manager
         # - node.hostname == worker1
         - node.labels.n8n-webhook == true # nome do label: app, valor do label: workers
+      # Labels do Traefik
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.n8n-webhook.rule=Host(`webhook.${DOMAIN}`)"
+        - "traefik.http.routers.n8n-webhook.entrypoints=websecure"
+        - "traefik.http.routers.n8n-webhook.tls=true"
+        - "traefik.http.services.n8n-webhook.loadbalancer.server.port=5678"
+        - "traefik.http.routers.n8n-webhook.service=n8n-webhook"
       resources:
         # Definição dos Limites de Recursos deste Serviço
         limits:

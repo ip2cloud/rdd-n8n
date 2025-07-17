@@ -1,0 +1,59 @@
+version: "3.7"
+
+services:
+  traefik:
+    image: traefik:v3.0
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    command:
+      # Habilitar API e Dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=false"
+      # Configurar providers
+      - "--providers.docker=true"
+      - "--providers.docker.swarmMode=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=network_swarm_public"
+      # Configurar entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # Redirecionar HTTP para HTTPS
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      # Logs
+      - "--log.level=INFO"
+      - "--accesslog=true"
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik_certs:/certs
+    networks:
+      - network_swarm_public
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        # Dashboard do Traefik
+        - "traefik.enable=true"
+        - "traefik.http.routers.traefik.rule=Host(`traefik.${DOMAIN}`)"
+        - "traefik.http.routers.traefik.entrypoints=websecure"
+        - "traefik.http.routers.traefik.tls=true"
+        - "traefik.http.routers.traefik.service=api@internal"
+        - "traefik.http.services.traefik.loadbalancer.server.port=8080"
+        # Middleware de autenticação para o dashboard
+        - "traefik.http.routers.traefik.middlewares=traefik-auth"
+        - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$2y$$10$$8fHxKsH7c6PmLr3u3rVqFuP6OFCllbQhs7rSc7dCQcKpLQkqkqu7C"
+
+volumes:
+  traefik_certs:
+    external: true
+    name: traefik_certs
+
+networks:
+  network_swarm_public:
+    external: true
+    name: network_swarm_public

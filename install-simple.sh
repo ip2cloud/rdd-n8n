@@ -47,6 +47,12 @@ echo ""
 print_info "Configuração rápida (pressione ENTER para usar valores padrão)"
 echo ""
 
+read -p "Email do administrador do n8n: " INITIAL_ADMIN_EMAIL
+while [[ -z "$INITIAL_ADMIN_EMAIL" ]]; do
+    print_error "Email do administrador é obrigatório!"
+    read -p "Email do administrador do n8n: " INITIAL_ADMIN_EMAIL
+done
+
 read -p "Domínio principal (ex: exemplo.com): " DOMAIN
 while [[ -z "$DOMAIN" ]]; do
     print_error "Domínio é obrigatório!"
@@ -61,6 +67,10 @@ if [[ -z "$DB_PASSWORD" ]]; then
     DB_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-16)
     print_info "Senha gerada: $DB_PASSWORD"
 fi
+
+# Gerar senha inicial para o admin do n8n
+INITIAL_ADMIN_PASSWORD=$(openssl rand -base64 12 | tr -d "=+/")
+print_info "Senha admin n8n gerada: $INITIAL_ADMIN_PASSWORD"
 
 # Gerar encryption key
 N8N_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-32)
@@ -106,6 +116,7 @@ print_success "Redes criadas"
 print_info "Criando volumes..."
 docker volume create postgres_data >/dev/null 2>&1 || true
 docker volume create redis_data >/dev/null 2>&1 || true
+docker volume create traefik_certs >/dev/null 2>&1 || true
 print_success "Volumes criados"
 
 # 6. Criar arquivo .env
@@ -117,6 +128,8 @@ DATABASE=$DATABASE
 DATABASE_PASSWORD=$DB_PASSWORD
 N8N_ENCRYPTION_KEY=$N8N_ENCRYPTION_KEY
 POSTGRES_PASSWORD=$DB_PASSWORD
+INITIAL_ADMIN_EMAIL=$INITIAL_ADMIN_EMAIL
+INITIAL_ADMIN_PASSWORD=$INITIAL_ADMIN_PASSWORD
 
 # URLs finais
 EDITOR_URL=https://fluxos.$DOMAIN
@@ -124,28 +137,21 @@ WEBHOOK_URL=https://webhook.$DOMAIN
 EOF
 print_success "Configurações salvas em .env"
 
-# 7. Deploy PostgreSQL
-print_info "Instalando PostgreSQL..."
-export POSTGRES_PASSWORD=$DB_PASSWORD
-docker stack deploy -c postgres16/postgres.yaml postgres >/dev/null 2>&1
-sleep 10
-print_success "PostgreSQL instalado"
-
-# 8. Deploy Redis
-print_info "Instalando Redis..."
-docker stack deploy -c redis/redis.yaml redis >/dev/null 2>&1
+# 7. Deploy Portainer
+print_info "Instalando Portainer..."
+docker pull portainer/portainer-ce:sts >/dev/null 2>&1
+docker stack deploy -c portainer/portainer.yaml portainer >/dev/null 2>&1
 sleep 5
-print_success "Redis instalado"
+print_success "Portainer instalado"
 
-# 9. Deploy n8n
-print_info "Instalando n8n (modo queue)..."
-export DOMAIN DATABASE DATABASE_PASSWORD N8N_ENCRYPTION_KEY
-docker stack deploy -c n8n/queue/orq_editor.yaml n8n_editor >/dev/null 2>&1
-docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook >/dev/null 2>&1
-docker stack deploy -c n8n/queue/orq_worker.yaml n8n_worker >/dev/null 2>&1
-print_success "n8n instalado"
+# 8. Deploy Traefik
+print_info "Instalando Traefik..."
+export DOMAIN
+docker stack deploy -c traefik/traefik.yaml traefik >/dev/null 2>&1
+sleep 5
+print_success "Traefik instalado"
 
-# 10. Instalar ctop (opcional)
+# 9. Instalar ctop (opcional)
 if ! command -v docker-ctop >/dev/null 2>&1; then
     print_info "Instalando ctop..."
     curl -fsSL https://azlux.fr/repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/azlux-archive-keyring.gpg >/dev/null 2>&1
@@ -163,11 +169,16 @@ echo "╚═══════════════════════�
 echo ""
 echo "📌 INFORMAÇÕES IMPORTANTES:"
 echo ""
+echo "🎛️ Portainer (Gerenciador Docker):"
+echo "   URL: https://$SERVER_IP:9443"
+echo "   ⚠️  Acesso inicial: Defina senha de admin na primeira vez!"
+echo ""
 echo "🌐 URLs do n8n:"
 echo "   Editor: https://fluxos.$DOMAIN"
 echo "   Webhook: https://webhook.$DOMAIN"
 echo ""
 echo "🔑 Credenciais salvas em: .env"
+echo "   Admin n8n: $INITIAL_ADMIN_EMAIL / $INITIAL_ADMIN_PASSWORD"
 echo "   PostgreSQL: postgres / $DB_PASSWORD"
 echo "   Banco: $DATABASE"
 echo ""
@@ -181,4 +192,25 @@ echo "⚠️  IMPORTANTE: Configure o DNS dos domínios!"
 echo "   fluxos.$DOMAIN → $SERVER_IP"
 echo "   webhook.$DOMAIN → $SERVER_IP"
 echo ""
-echo "✅ Instalação completa em $(date)"
+echo "🚀 PRÓXIMOS PASSOS:"
+echo ""
+echo "1️⃣ ACESSE O PORTAINER:"
+echo "   https://$SERVER_IP:9443"
+echo "   - Crie a senha do admin"
+echo "   - Conecte ao ambiente local"
+echo ""
+echo "2️⃣ CONFIGURE O DNS:"
+echo "   fluxos.$DOMAIN → $SERVER_IP"
+echo "   webhook.$DOMAIN → $SERVER_IP"
+echo "   traefik.$DOMAIN → $SERVER_IP (opcional)"
+echo ""
+echo "3️⃣ INSTALAÇÃO VIA PORTAINER:"
+echo "   No Portainer, vá em Stacks > Add Stack"
+echo "   - Nome: postgres, arquivo: postgres16/postgres.yaml"
+echo "   - Nome: redis, arquivo: redis/redis.yaml"
+echo "   - Nome: n8n_editor, arquivo: n8n/queue/orq_editor.yaml"
+echo "   - Nome: n8n_webhook, arquivo: n8n/queue/orq_webhook.yaml"
+echo "   - Nome: n8n_worker, arquivo: n8n/queue/orq_worker.yaml"
+echo ""
+echo "✅ Base instalada em $(date)"
+echo "📁 Arquivos YAML prontos no diretório atual"
