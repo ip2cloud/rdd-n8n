@@ -7,6 +7,50 @@
 
 set -e
 
+# Função que SEMPRE executa no final
+show_final_info() {
+    local domain="$1"
+    local server_ip="$2" 
+    local admin_email="$3"
+    local admin_password="$4"
+    local pgadmin_password="$5"
+    local traefik_password="$6"
+    local db_password="$7"
+    
+    echo ""
+    echo "╔══════════════════════════════════════════╗"
+    echo "║           INFORMAÇÕES FINAIS             ║"
+    echo "╚══════════════════════════════════════════╝"
+    echo ""
+    echo "🌐 URLs DOS SERVIÇOS:"
+    echo "   n8n Editor: https://fluxos.$domain"
+    echo "   n8n Webhook: https://webhook.$domain" 
+    echo "   pgAdmin: http://$server_ip:4040"
+    echo "   Portainer: https://$server_ip:9443"
+    echo "   Traefik: https://traefik.$domain"
+    echo ""
+    echo "🔑 CREDENCIAIS:"
+    echo "   n8n: $admin_email / $admin_password"
+    echo "   pgAdmin: $admin_email / $pgadmin_password"
+    echo "   Traefik: admin / $traefik_password"
+    echo "   PostgreSQL: postgres / $db_password"
+    echo ""
+    echo "🚨 URGENTE: PORTAINER (10 MINUTOS!)"
+    echo "   https://$server_ip:9443"
+    echo ""
+    echo "📋 PRÓXIMOS PASSOS:"
+    echo "1. Acesse Portainer: https://$server_ip:9443" 
+    echo "2. Configure DNS: fluxos.$domain → $server_ip"
+    echo "3. Configure DNS: webhook.$domain → $server_ip"
+    echo "4. Acesse n8n: https://fluxos.$domain"
+    echo ""
+    print_error "📸 SALVE ESTE PRINT EM LOCAL SEGURO!"
+    echo ""
+}
+
+# Trap para executar sempre, mesmo se der erro
+trap 'show_final_info "$DOMAIN" "$SERVER_IP" "$INITIAL_ADMIN_EMAIL" "$INITIAL_ADMIN_PASSWORD" "$PGADMIN_ADMIN_PASSWORD" "$TRAEFIK_ADMIN_PASSWORD" "$DB_PASSWORD"' EXIT
+
 # Cores
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -23,6 +67,7 @@ clear
 echo "╔══════════════════════════════════════════╗"
 echo "║     INSTALAÇÃO AUTOMÁTICA DO N8N         ║"
 echo "║     Docker + PostgreSQL + Redis          ║"
+echo "║           Versão FINAL v4                ║"
 echo "╔══════════════════════════════════════════╝"
 echo ""
 
