@@ -1,14 +1,18 @@
-# 🚀 Instalação Rápida do n8n com Portainer
+# 🚀 Instalação Automática do n8n + PostgreSQL + Redis
 
-## ⚡ Instalação em 2 Etapas
+## ⚡ Instalação Completamente Automática em Uma Execução
 
-### 🎯 Etapa 1: Preparar o Ambiente (Automática)
+### 🎯 O que é instalado automaticamente:
+- Docker Swarm + Portainer + Traefik (SSL automático)
+- PostgreSQL 16 + Redis 7 
+- n8n completo (editor + webhook + worker) em modo queue
+- Todas as redes, volumes e configurações necessárias
 
-### 🎯 Etapa 2: Deploy dos Serviços (Via Portainer)
+---
 
-## 📋 ETAPA 1: Preparar o Ambiente
+## 📋 Como Instalar
 
-### 1️⃣ Clone e execute o instalador
+### 1️⃣ Execute o instalador
 
 ```bash
 git clone <url-do-repositorio>
@@ -17,87 +21,67 @@ chmod +x install-simple.sh
 sudo ./install-simple.sh
 ```
 
-### 2️⃣ O script vai instalar:
+### 2️⃣ Responda 5 perguntas simples:
 
-- ✅ Docker e Docker Swarm
-- ✅ Portainer (gerenciador visual)
-- ✅ Traefik (proxy reverso)
-- ✅ Criar volumes e redes
-- ✅ Gerar arquivo .env com senhas
+1. **Email do administrador**: seu-email@exemplo.com
+2. **Domínio principal**: exemplo.com  
+3. **Nome do banco** [ENTER = n8n]: nome_do_banco (opcional)
+4. **Senha do PostgreSQL** [ENTER = auto-gerar]: senha (opcional)
+5. **Deploy automático** [ENTER = Sim]: Y/n
 
-### 3️⃣ Scripts auxiliares inclusos:
+> 💡 **Recomendado**: Tecle ENTER em tudo para usar os padrões
 
-- 🔧 `./debug.sh` - Diagnóstico de problemas
-- 🗑️ `./cleanup.sh` - Limpeza rápida
-- 🗑️ `./uninstall.sh` - Desinstalação completa
+### 3️⃣ Aguarde ~5 minutos e pronto! 
 
-### 4️⃣ Tempo: ~3 minutos
+✅ **Tudo instalado automaticamente!**
 
-## 🎛️ ETAPA 2: Deploy via Portainer
+---
 
-### 1️⃣ Acesse o Portainer
+## 🌐 Configure o DNS (Obrigatório)
+
+Aponte os domínios para o IP do seu servidor:
 
 ```
-https://SEU-IP:9443
+fluxos.SEU-DOMINIO.com   → IP_DO_SERVIDOR
+webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
 ```
 
-- Crie senha do admin no primeiro acesso
-- Conecte ao ambiente local
+---
 
-### 2️⃣ Deploy dos Stacks
+## 🔑 URLs de Acesso
 
-No Portainer, vá em **Stacks > Add Stack** e crie:
+### n8n (Automação de Workflows)
+- **Editor**: https://fluxos.SEU-DOMINIO.com
+- **Webhook**: https://webhook.SEU-DOMINIO.com
+- **Credenciais**: Mostradas no final da instalação (salvas em `.env`)
 
-#### Stack 1: PostgreSQL
+### Portainer (Monitoramento Docker)
+- **URL**: https://IP_DO_SERVIDOR:9443
+- **Primeiro acesso**: Defina senha do admin
+- **Função**: Monitorar containers e serviços
 
-- **Name**: postgres
-- **Build method**: Upload
-- **Upload file**: `postgres16/postgres.yaml`
-- **Environment variables**: Adicione do arquivo .env
+---
 
-#### Stack 2: Redis
+## ⏱️ Tempo de Instalação
 
-- **Name**: redis
-- **Build method**: Upload
-- **Upload file**: `redis/redis.yaml`
+- **Interação**: 60 segundos (responder perguntas)
+- **Instalação**: ~5 minutos (automática)
+- **Aguardar serviços**: ~2 minutos adicionais
 
-#### Stack 3: n8n Editor
+**Total**: ~8 minutos do início ao acesso
 
-- **Name**: n8n_editor
-- **Build method**: Upload
-- **Upload file**: `n8n/queue/orq_editor.yaml`
-- **Environment variables**: Adicione do arquivo .env
+---
 
-#### Stack 4: n8n Webhook
+## 🔧 Scripts Auxiliares Inclusos
 
-- **Name**: n8n_webhook
-- **Build method**: Upload
-- **Upload file**: `n8n/queue/orq_webhook.yaml`
-- **Environment variables**: Adicione do arquivo .env
-
-#### Stack 5: n8n Worker
-
-- **Name**: n8n_worker
-- **Build method**: Upload
-- **Upload file**: `n8n/queue/orq_worker.yaml`
-- **Environment variables**: Adicione do arquivo .env
-
-### 3️⃣ Configure o DNS
-
-- `fluxos.SEU-DOMINIO.com` → IP do servidor
-- `webhook.SEU-DOMINIO.com` → IP do servidor
-
-## 🔧 Scripts Auxiliares
-
-### Debug e Diagnóstico
+### Diagnóstico e Monitoramento
 ```bash
 ./debug.sh
 ```
 - Verifica status do Docker Swarm
-- Lista nodes, redes e volumes
-- Mostra stacks e serviços
-- Exibe logs dos serviços
-- Comandos para deploy manual
+- Lista nodes, redes, volumes e stacks
+- Mostra logs dos serviços
+- Comandos úteis para troubleshooting
 
 ### Limpeza Rápida
 ```bash
@@ -112,151 +96,112 @@ No Portainer, vá em **Stacks > Add Stack** e crie:
 ```bash
 sudo ./uninstall.sh
 ```
-- Remove todos os stacks
-- Apaga volumes (⚠️ DADOS PERDIDOS!)
+- Remove todos os stacks e serviços
+- Apaga volumes (⚠️ **DADOS PERDIDOS!**)
 - Desativa Docker Swarm
 - Remove redes overlay
-- Mantém backup do .env
+- Mantém backup do `.env`
+
+### Deploy Manual via API (se necessário)
+```bash
+./deploy-api.sh
+```
+- Para casos onde o deploy automático falhou
+- Usa API do Portainer para deploy
+- Não requer upload manual de arquivos
+
+---
 
 ## 🔧 Variáveis de Ambiente
 
-Copie estas variáveis do arquivo `.env` para usar no Portainer:
+Todas as configurações ficam salvas no arquivo `.env`:
 
 ```env
 DOMAIN=seu-dominio.com
 DATABASE=n8n
-DATABASE_PASSWORD=senha_gerada
-N8N_ENCRYPTION_KEY=chave_gerada
-POSTGRES_PASSWORD=senha_gerada
+DATABASE_PASSWORD=senha_gerada_automaticamente
+N8N_ENCRYPTION_KEY=chave_gerada_automaticamente
+POSTGRES_PASSWORD=senha_gerada_automaticamente
 INITIAL_ADMIN_EMAIL=seu@email.com
-INITIAL_ADMIN_PASSWORD=senha_gerada
+INITIAL_ADMIN_PASSWORD=senha_gerada_automaticamente
+EDITOR_URL=https://fluxos.seu-dominio.com
+WEBHOOK_URL=https://webhook.seu-dominio.com
 ```
 
-## 🔧 Requisitos
+---
 
-- **Sistema**: Debian/Ubuntu
-- **Memória**: Mínimo 2GB RAM
-- **Usuário**: root ou sudo
-- **Domínio**: Um domínio válido
-
-## 💬 Durante a instalação
-
-O script perguntará apenas 4 coisas:
-
-1. **Email do administrador**: seu-email@exemplo.com
-2. **Domínio principal**: exemplo.com
-3. **Nome do banco** (opcional): Tecle ENTER para usar padrão
-4. **Senha do PostgreSQL** (opcional): Tecle ENTER para gerar automaticamente
-
-## ⏱️ Tempo de instalação
-
-- **Total**: ~5 minutos
-- **Interação**: 30 segundos
-
-## 🎯 Após a instalação
-
-### URLs de acesso:
-
-#### 🎛️ Portainer (Gerenciador Docker):
-
-- **URL**: https://SEU-IP-PUBLICO:9443
-- **Primeiro acesso**: Defina a senha do admin
-- **Função**: Interface visual para gerenciar containers
-
-#### 🔄 n8n (Automação):
-
-- **Editor**: https://fluxos.SEU-DOMINIO.com
-- **Webhooks**: https://webhook.SEU-DOMINIO.com
-- **Login inicial**: Use o email e senha mostrados ao final da instalação
-- **Nota**: O Nginx já está configurado com SSL auto-assinado!
-
-### Arquivo de configuração:
-
-- Todas as senhas estão em `.env`
-- **GUARDE ESTE ARQUIVO!**
-- Inclui credenciais do admin inicial do n8n
-
-### Comandos úteis:
+## 📊 Comandos Úteis
 
 ```bash
-docker service ls          # Ver serviços rodando
-docker-ctop               # Monitor em tempo real
-docker service logs n8n   # Ver logs
-source .env              # Carregar variáveis
-./debug.sh               # Script de diagnóstico
+# Ver status dos serviços
+docker service ls
+
+# Monitorar containers em tempo real
+docker-ctop
+
+# Ver logs de um serviço específico
+docker service logs nome_do_servico
+
+# Ver stacks instalados
+docker stack ls
+
+# Carregar variáveis do .env
+source .env
+
+# Script de diagnóstico completo
+./debug.sh
 ```
 
-## ❓ Problemas?
+---
+
+## ❓ Resolução de Problemas
 
 ### Script não executa?
-
 ```bash
-# Corrija quebras de linha e permissões
+# Corrigir permissões e quebras de linha
 sed -i 's/\r$//' *.sh
 chmod +x *.sh
 ```
 
-### Problemas na instalação?
-
-```bash
-# Execute o script de diagnóstico
-./debug.sh
-
-# Mostra status de tudo:
-# - Docker Swarm
-# - Nodes do cluster
-# - Redes e volumes
-# - Stacks e serviços
-# - Logs dos serviços
-```
-
 ### Serviços não sobem?
-
 ```bash
-# Verifique os logs
-docker service ls
-docker service logs nome_do_servico
-
-# Ou use o diagnóstico completo
+# Diagnóstico completo
 ./debug.sh
+
+# Ver logs específicos
+docker service logs postgres_postgres
+docker service logs n8n_editor_n8n
 ```
 
-### Deploy manual do Portainer?
+### n8n não acessa?
+1. ✅ Verifique se o DNS está configurado
+2. ✅ Aguarde ~2 minutos para todos os serviços subirem
+3. ✅ Verifique no Portainer se todos estão rodando
 
+### Portainer não acessa?
 ```bash
-# Se o Portainer não subir automaticamente
-docker volume create portainer_data
+# Verificar se está rodando
+docker service ls | grep portainer
+
+# Reinstalar se necessário
 docker stack deploy -c portainer/portainer.yaml portainer
 ```
 
+---
+
 ## 🗑️ Desinstalação
 
-### Limpeza rápida?
-
+### Limpeza Rápida (mantém dados)
 ```bash
-# Limpeza simples e rápida
 ./cleanup.sh
-
-# Remove: stacks principais, limpa sistema, desativa swarm
 ```
 
-### Remover tudo completamente?
-
+### Remoção Completa (apaga tudo)
 ```bash
-# Script de desinstalação completa
 sudo ./uninstall.sh
-
-# Remove:
-# - Todos os stacks e serviços
-# - Todos os volumes (DADOS PERDIDOS!)
-# - Docker Swarm
-# - Redes overlay
-# - Opção: imagens não utilizadas
-# - Mantém: arquivo .env como backup
 ```
 
-### Precisa reinstalar?
-
+### Reinstalar
 ```bash
 # Após desinstalar, reinstale com:
 sudo ./install-simple.sh
@@ -264,4 +209,40 @@ sudo ./install-simple.sh
 
 ---
 
-**✅ Pronto! Instalação super simplificada do n8n com PostgreSQL e Redis!**
+## 🔧 Requisitos do Sistema
+
+- **OS**: Debian/Ubuntu (64-bit)
+- **RAM**: Mínimo 2GB (recomendado 4GB+)
+- **CPU**: 1 core (recomendado 2+ cores)
+- **Disco**: 10GB+ livres
+- **Usuário**: root ou sudo
+- **Domínio**: Um domínio válido configurado
+
+---
+
+## ✅ Próximos Passos Após Instalação
+
+### 1️⃣ Configure o DNS
+```
+fluxos.SEU-DOMINIO.com   → IP_DO_SERVIDOR
+webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
+```
+
+### 2️⃣ Aguarde ~2 minutos
+Os serviços precisam de um tempo para inicializar completamente.
+
+### 3️⃣ Acesse o n8n
+- URL: https://fluxos.SEU-DOMINIO.com
+- Use as credenciais mostradas no final da instalação
+
+### 4️⃣ Monitore no Portainer (opcional)
+- URL: https://IP_DO_SERVIDOR:9443
+- Crie senha do admin no primeiro acesso
+
+---
+
+## 🎉 Pronto!
+
+**✅ Instalação super simplificada do n8n com PostgreSQL e Redis!**
+
+Tudo funciona automaticamente com SSL via Traefik e modo queue para alta performance.
