@@ -413,15 +413,16 @@ echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║         INSTALAÇÃO CONCLUÍDA!            ║"
 echo "║           Versão: 2025.07.17             ║"
+echo "║             Versão FINAL v4              ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 
-# Debug: Verificar se chegou até aqui
-echo "DEBUG: Chegou ao resultado final - vars definidas:"
-echo "SERVER_IP: $SERVER_IP"
-echo "DOMAIN: $DOMAIN"
-echo "AUTO_DEPLOYED: $AUTO_DEPLOYED"
-echo ""
+# # Debug: Verificar se chegou até aqui
+# echo "DEBUG: Chegou ao resultado final - vars definidas:"
+# echo "SERVER_IP: $SERVER_IP"
+# echo "DOMAIN: $DOMAIN"
+# echo "AUTO_DEPLOYED: $AUTO_DEPLOYED"
+# echo ""
 
 echo "🚨 ⚠️  ATENÇÃO MUITO IMPORTANTE! ⚠️  🚨"
 echo ""
