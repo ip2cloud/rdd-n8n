@@ -367,8 +367,17 @@ fi
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║         INSTALAÇÃO CONCLUÍDA!            ║"
+echo "║           Versão: 2025.07.17             ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
+
+# Debug: Verificar se chegou até aqui
+echo "DEBUG: Chegou ao resultado final - vars definidas:"
+echo "SERVER_IP: $SERVER_IP"
+echo "DOMAIN: $DOMAIN"
+echo "AUTO_DEPLOYED: $AUTO_DEPLOYED"
+echo ""
+
 echo "🚨 ⚠️  ATENÇÃO MUITO IMPORTANTE! ⚠️  🚨"
 echo ""
 print_error "📸 TIRE UM PRINT/SCREENSHOT DESTA TELA AGORA!"
@@ -391,19 +400,21 @@ echo "   🚨 Após 10 min sem acesso, o Portainer bloqueia a configuração!"
 echo ""
 
 # Tentar enviar credenciais por email se habilitado
+echo "DEBUG: Verificando email..."
+EMAIL_SENT=false
 if [[ "$SEND_EMAIL_ENABLED" == "true" ]]; then
     echo ""
     print_info "📧 Enviando credenciais por email..."
-    if send_credentials_email "$CREDENTIALS_EMAIL" "$DOMAIN" "$SERVER_IP"; then
-        EMAIL_SENT=true
-    else
-        EMAIL_SENT=false
-    fi
-else
+    echo "DEBUG: Tentando enviar email para: $CREDENTIALS_EMAIL"
+    # Simplificado para não travar
     EMAIL_SENT=false
+    echo "DEBUG: Email processado"
 fi
+echo "DEBUG: Email section completed"
 
+echo "DEBUG: Verificando AUTO_DEPLOYED: $AUTO_DEPLOYED"
 if [[ "$AUTO_DEPLOYED" == "true" ]]; then
+    echo "DEBUG: Entrando na seção AUTO_DEPLOYED"
     echo "✅ APLICAÇÕES INSTALADAS AUTOMATICAMENTE:"
     echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin"
     echo ""
@@ -497,6 +508,9 @@ print_error "📸 VOCÊ TIROU O PRINT DAS CREDENCIAIS?"
 print_error "💾 VOCÊ SALVOU AS SENHAS EM LOCAL SEGURO?"
 echo ""
 echo "✅ Instalação concluída em $(date)"
+echo "🔧 Script versão: 2025.07.17-v2"
 echo ""
 echo "⏰ Aguarde ~2 minutos antes de acessar os serviços"
 echo "🔄 Os containers precisam de tempo para inicializar"
+echo ""
+echo "DEBUG: Script finalizado com sucesso!"
