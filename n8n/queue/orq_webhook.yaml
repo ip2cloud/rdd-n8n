@@ -205,6 +205,7 @@ services:
         - "traefik.http.routers.n8n-webhook.rule=Host(`webhook.${DOMAIN}`)"
         - "traefik.http.routers.n8n-webhook.entrypoints=websecure"
         - "traefik.http.routers.n8n-webhook.tls=true"
+        - "traefik.http.routers.n8n-webhook.tls.certresolver=letsencrypt"
         - "traefik.http.services.n8n-webhook.loadbalancer.server.port=5678"
         - "traefik.http.routers.n8n-webhook.service=n8n-webhook"
       resources:

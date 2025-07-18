@@ -213,6 +213,7 @@ services:
         - "traefik.http.routers.n8n-editor.rule=Host(`fluxos.${DOMAIN}`)"
         - "traefik.http.routers.n8n-editor.entrypoints=websecure"
         - "traefik.http.routers.n8n-editor.tls=true"
+        - "traefik.http.routers.n8n-editor.tls.certresolver=letsencrypt"
         - "traefik.http.services.n8n-editor.loadbalancer.server.port=5678"
         - "traefik.http.routers.n8n-editor.service=n8n-editor"
         # Headers para WebSocket
