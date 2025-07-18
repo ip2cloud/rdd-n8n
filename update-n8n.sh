@@ -5,18 +5,6 @@
 # Seleciona versão e atualiza todos os orq_
 ###################################
 
-# Cores
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-print_success() { echo -e "${GREEN}✓ $1${NC}"; }
-print_error() { echo -e "${RED}✗ $1${NC}"; exit 1; }
-print_info() { echo -e "${YELLOW}→ $1${NC}"; }
-print_version() { echo -e "${BLUE}🔖 $1${NC}"; }
-
 echo "╔══════════════════════════════════════════╗"
 echo "║         ATUALIZAÇÃO DO N8N               ║"
 echo "║     Seleção de Versão Automática         ║"
@@ -24,93 +12,86 @@ echo "╚═══════════════════════�
 echo ""
 
 # Verificar se .env existe
-if [[ ! -f ".env" ]]; then
-    print_error "Arquivo .env não encontrado. Execute ./install-simple.sh primeiro"
+if [ ! -f ".env" ]; then
+    echo "❌ Arquivo .env não encontrado"
+    echo "Execute ./install-simple.sh primeiro"
+    exit 1
 fi
 
 # Verificar se Docker está rodando
 if ! docker info >/dev/null 2>&1; then
-    print_error "Docker não está rodando ou não há permissão de acesso"
-fi
-
-# Verificar se curl está instalado
-if ! command -v curl >/dev/null 2>&1; then
-    print_error "curl não está instalado. Execute: apt install curl"
-fi
-
-# Verificar se jq está disponível (opcional, mas útil)
-if ! command -v jq >/dev/null 2>&1; then
-    print_info "⚠️  jq não instalado. Usando parsing básico (pode ser menos confiável)"
+    echo "❌ Docker não está rodando ou sem permissão"
+    exit 1
 fi
 
 # Carregar variáveis
 source .env
-print_info "Configurações carregadas do .env"
+echo "✅ Configurações carregadas do .env"
+echo "📋 Domínio: $DOMAIN"
+echo ""
 
-# Função para buscar versões disponíveis do n8n
+# Função para buscar versões disponíveis
 get_n8n_versions() {
-    print_info "🔍 Buscando versões disponíveis do n8n no Docker Hub..."
+    echo "🔍 Buscando versões do n8n no Docker Hub..."
     
-    # Buscar tags do Docker Hub usando API
-    local response=$(curl -s "https://registry.hub.docker.com/v2/repositories/n8nio/n8n/tags/?page_size=50" 2>/dev/null)
+    # Tentar buscar via API do Docker Hub
+    local response=$(curl -s "https://registry.hub.docker.com/v2/repositories/n8nio/n8n/tags/?page_size=30" 2>/dev/null)
     
-    if [[ -z "$response" ]]; then
-        print_error "Falha ao conectar com Docker Hub. Verifique sua conexão."
+    if [[ -n "$response" ]]; then
+        # Extrair versões numéricas e ordenar
+        local versions=$(echo "$response" | grep -o '"name":"[0-9]\+\.[0-9]\+\.[0-9]\+"' | sed 's/"name":"//g' | sed 's/"//g' | sort -V -r | head -15)
+        
+        if [[ -n "$versions" ]]; then
+            echo "$versions"
+            return
+        fi
     fi
     
-    # Extrair apenas versões numéricas (formato X.Y.Z)
-    local versions=$(echo "$response" | grep -o '"name":"[0-9]\+\.[0-9]\+\.[0-9]\+"' | sed 's/"name":"//g' | sed 's/"//g' | sort -V -r | head -20)
-    
-    if [[ -z "$versions" ]]; then
-        print_error "Não foi possível obter lista de versões. Usando versões padrão."
-        versions="1.100.1
+    # Fallback: versões fixas se API falhar
+    echo "1.103.0
+1.102.0
+1.101.0
+1.100.1
+1.100.0
 1.99.0
 1.98.0
-1.97.0
-1.96.0
 latest"
-    fi
-    
-    echo "$versions"
 }
 
-# Função para exibir versão atual
+# Mostrar versão atual
 show_current_version() {
-    print_info "📋 Verificando versão atual do n8n..."
+    echo "📋 Verificando versão atual do n8n..."
     
     local current_version=""
     if docker service ls | grep -q n8n_editor; then
-        # Extrair versão da imagem do serviço
-        current_version=$(docker service inspect n8n_editor_n8n_editor_ip2 --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' 2>/dev/null | sed 's/.*://g')
-        if [[ -z "$current_version" ]]; then
-            # Tentar com nome alternativo
-            current_version=$(docker service ls --format "table {{.Name}}\t{{.Image}}" | grep n8n_editor | awk '{print $2}' | sed 's/.*://g')
-        fi
+        current_version=$(docker service ls --format "{{.Name}} {{.Image}}" | grep n8n_editor | head -1 | awk '{print $2}' | sed 's/.*://')
+        
         if [[ -n "$current_version" ]]; then
-            print_success "Versão atual: n8nio/n8n:$current_version"
+            echo "✅ Versão atual: n8nio/n8n:$current_version"
         else
-            print_info "Não foi possível detectar a versão atual"
+            echo "ℹ️  Não foi possível detectar a versão atual"
         fi
     else
-        print_info "Serviços n8n não encontrados"
+        echo "ℹ️  Serviços n8n não encontrados"
     fi
+    echo ""
 }
 
-# Função para validar se a imagem existe
+# Validar se a imagem existe
 validate_image() {
     local version="$1"
-    print_info "🔍 Validando imagem n8nio/n8n:$version..."
+    echo "🔍 Validando imagem n8nio/n8n:$version..."
     
     if docker manifest inspect "n8nio/n8n:$version" >/dev/null 2>&1; then
-        print_success "Imagem n8nio/n8n:$version encontrada"
+        echo "✅ Imagem n8nio/n8n:$version encontrada"
         return 0
     else
-        print_error "Imagem n8nio/n8n:$version não encontrada no Docker Hub"
+        echo "❌ Imagem n8nio/n8n:$version não encontrada no Docker Hub"
         return 1
     fi
 }
 
-# Função para atualizar arquivo YAML
+# Atualizar arquivo YAML
 update_yaml_version() {
     local file="$1"
     local new_version="$2"
@@ -121,51 +102,51 @@ update_yaml_version() {
         
         # Substituir versão na linha da imagem
         sed -i "s|image: n8nio/n8n:.*|image: n8nio/n8n:$new_version|g" "$file"
-        print_success "Arquivo $file atualizado para versão $new_version"
+        echo "✅ $file atualizado para versão $new_version"
     else
-        print_error "Arquivo $file não encontrado"
+        echo "❌ Arquivo $file não encontrado"
+        return 1
     fi
 }
 
-# Função para fazer deploy dos serviços
+# Deploy dos serviços
 deploy_services() {
     local version="$1"
     
-    print_info "🚀 Fazendo deploy da nova versão..."
+    echo "🚀 Fazendo deploy da nova versão..."
     
     # Exportar variáveis necessárias
     export DOMAIN DATABASE DATABASE_PASSWORD N8N_ENCRYPTION_KEY INITIAL_ADMIN_EMAIL INITIAL_ADMIN_PASSWORD
     
-    # Deploy n8n Editor
-    print_info "Atualizando n8n Editor..."
+    # Deploy n8n Editor primeiro
+    echo "→ Atualizando n8n Editor..."
     docker stack deploy -c n8n/queue/orq_editor.yaml n8n_editor
     sleep 30
-    print_success "n8n Editor atualizado"
+    echo "✅ n8n Editor atualizado"
     
     # Deploy n8n Webhook
-    print_info "Atualizando n8n Webhook..."
+    echo "→ Atualizando n8n Webhook..."
     docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook
     sleep 15
-    print_success "n8n Webhook atualizado"
+    echo "✅ n8n Webhook atualizado"
     
     # Deploy n8n Worker
-    print_info "Atualizando n8n Worker..."
+    echo "→ Atualizando n8n Worker..."
     docker stack deploy -c n8n/queue/orq_worker.yaml n8n_worker
     sleep 15
-    print_success "n8n Worker atualizado"
+    echo "✅ n8n Worker atualizado"
 }
 
 # Função principal
 main() {
     # Mostrar versão atual
     show_current_version
-    echo ""
     
     # Perguntar se quer ver versões disponíveis
     read -p "Deseja ver as versões disponíveis no Docker Hub? (Y/n): " SHOW_VERSIONS
     if [[ ! "$SHOW_VERSIONS" =~ ^[Nn]$ ]]; then
         echo ""
-        print_info "🔖 Versões disponíveis do n8n:"
+        echo "🔖 Versões disponíveis do n8n:"
         echo ""
         
         local versions=$(get_n8n_versions)
@@ -174,7 +155,7 @@ main() {
         # Criar array de versões
         declare -a version_array
         while IFS= read -r version; do
-            print_version "$counter) n8nio/n8n:$version"
+            echo "$counter) n8nio/n8n:$version"
             version_array[$counter]="$version"
             ((counter++))
         done <<< "$versions"
@@ -194,7 +175,7 @@ main() {
                 NEW_VERSION="${version_array[$CHOICE]}"
                 break
             else
-                print_error "Seleção inválida. Tente novamente."
+                echo "❌ Seleção inválida. Tente novamente."
             fi
         done
     else
@@ -203,7 +184,7 @@ main() {
     fi
     
     echo ""
-    print_info "Versão selecionada: n8nio/n8n:$NEW_VERSION"
+    echo "🎯 Versão selecionada: n8nio/n8n:$NEW_VERSION"
     
     # Validar imagem
     if ! validate_image "$NEW_VERSION"; then
@@ -213,16 +194,17 @@ main() {
     echo ""
     read -p "Confirma a atualização para n8nio/n8n:$NEW_VERSION? (Y/n): " CONFIRM
     if [[ "$CONFIRM" =~ ^[Nn]$ ]]; then
-        print_error "Atualização cancelada pelo usuário"
+        echo "❌ Atualização cancelada pelo usuário"
+        exit 1
     fi
     
     echo ""
-    print_info "🔄 Iniciando atualização para n8nio/n8n:$NEW_VERSION..."
+    echo "🔄 Iniciando atualização para n8nio/n8n:$NEW_VERSION..."
     
     # Atualizar arquivos YAML
-    update_yaml_version "n8n/queue/orq_editor.yaml" "$NEW_VERSION"
-    update_yaml_version "n8n/queue/orq_webhook.yaml" "$NEW_VERSION" 
-    update_yaml_version "n8n/queue/orq_worker.yaml" "$NEW_VERSION"
+    update_yaml_version "n8n/queue/orq_editor.yaml" "$NEW_VERSION" || exit 1
+    update_yaml_version "n8n/queue/orq_webhook.yaml" "$NEW_VERSION" || exit 1
+    update_yaml_version "n8n/queue/orq_worker.yaml" "$NEW_VERSION" || exit 1
     
     echo ""
     
@@ -230,18 +212,20 @@ main() {
     deploy_services "$NEW_VERSION"
     
     echo ""
-    print_success "🎉 Atualização concluída!"
+    echo "🎉 Atualização concluída com sucesso!"
     echo ""
     echo "📋 INFORMAÇÕES:"
     echo "   • Versão: n8nio/n8n:$NEW_VERSION"
     echo "   • Backups salvos: *.backup.*"
     echo "   • URL: https://fluxos.$DOMAIN"
     echo ""
-    echo "🔍 VERIFICAR:"
+    echo "🔍 VERIFICAR STATUS:"
     echo "   docker service ls | grep n8n"
     echo "   docker service logs \$(docker service ls --format '{{.Name}}' | grep n8n_editor | head -1)"
     echo ""
-    print_info "⏰ Aguarde ~2 minutos para os serviços inicializarem"
+    echo "⏰ Aguarde ~2 minutos para os serviços inicializarem completamente"
+    echo ""
+    echo "🌐 Acesse: https://fluxos.$DOMAIN"
 }
 
 # Executar função principal
