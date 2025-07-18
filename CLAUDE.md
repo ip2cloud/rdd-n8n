@@ -10,6 +10,7 @@ This is a **fully automated Docker Swarm deployment project** for n8n workflow a
 - n8n in queue mode (editor + webhook + worker)
 - Traefik reverse proxy with automatic SSL
 - Portainer for container management
+- pgAdmin 4 for PostgreSQL administration
 - Secure credential management with optional email delivery
 
 ## Installation Approach
@@ -30,7 +31,8 @@ The project uses a **fully automated approach** with optional email integration:
 ### Diagnostic & Maintenance
 - `debug.sh` - Comprehensive diagnostic script
 - `cleanup.sh` - Quick cleanup (remove stacks, clean system)
-- `uninstall.sh` - Complete uninstallation with data removal
+- `uninstall.sh` - Complete uninstallation with data removal (includes pgAdmin)
+- `create-database.sh` - Manual database creation utility (if needed)
 
 ### Configuration Templates
 - `smtp.conf.example` - SMTP configuration template
@@ -44,6 +46,7 @@ The project uses a **fully automated approach** with optional email integration:
 - `n8n/queue/orq_editor.yaml` - n8n editor interface (v1.100.1)
 - `n8n/queue/orq_webhook.yaml` - n8n webhook handler (v1.100.1)  
 - `n8n/queue/orq_worker.yaml` - n8n background worker (v1.100.1)
+- `pgadmin/pgadmin.yaml` - pgAdmin 4 web interface (direct IP:4040 access)
 
 ### Documentation
 - `README.md` - Complete user installation guide
@@ -66,6 +69,7 @@ The project uses a **fully automated approach** with optional email integration:
 - **Portainer**: `https://SERVER_IP:9443`
 - **n8n Editor**: `https://fluxos.DOMAIN`
 - **n8n Webhooks**: `https://webhook.DOMAIN`
+- **pgAdmin**: `http://SERVER_IP:4040` (direct access, no Traefik)
 - **Traefik Dashboard**: `https://traefik.DOMAIN` (with auth)
 
 ## Environment Variables
@@ -81,6 +85,7 @@ INITIAL_ADMIN_EMAIL=user@email.com
 INITIAL_ADMIN_PASSWORD=generated_password
 TRAEFIK_ADMIN_PASSWORD=generated_password
 TRAEFIK_ADMIN_HASH=generated_hash
+PGADMIN_ADMIN_PASSWORD=generated_password
 EDITOR_URL=https://fluxos.user-domain.com
 WEBHOOK_URL=https://webhook.user-domain.com
 ```
@@ -182,6 +187,7 @@ sudo ./install-simple.sh  # Just run installer again
 - `redis_data` - Redis persistence
 - `traefik_certs` - SSL certificate storage
 - `portainer_data` - Portainer configuration
+- `pgadmin_data` - pgAdmin 4 configuration and logs
 
 ## Important Notes
 
@@ -210,3 +216,9 @@ sudo ./install-simple.sh  # Just run installer again
 - `.gitignore` prevents credential file commits
 - Safe for public repositories
 - Configuration templates provided
+
+### pgAdmin Specific Notes
+- **Access**: Direct IP:4040 (bypasses Traefik for security)
+- **Authentication**: Uses same email as n8n admin + auto-generated password
+- **Security**: No SSL termination (internal network access recommended)
+- **Database connection**: Automatically configured for local PostgreSQL

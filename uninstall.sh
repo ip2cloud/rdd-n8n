@@ -86,6 +86,8 @@ echo "  Volume: portainer_data"
 docker volume rm portainer_data >/dev/null 2>&1 || true
 echo "  Volume: traefik_certs"
 docker volume rm traefik_certs >/dev/null 2>&1 || true
+echo "  Volume: pgadmin_data"
+docker volume rm pgadmin_data >/dev/null 2>&1 || true
 # Remover outros volumes órfãos
 docker volume prune -f >/dev/null 2>&1
 print_success "Volumes removidos"

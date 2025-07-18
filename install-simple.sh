@@ -109,6 +109,10 @@ print_info "Senha admin Traefik gerada: $TRAEFIK_ADMIN_PASSWORD"
 # Gerar hash da senha para o Traefik (htpasswd format)
 TRAEFIK_ADMIN_HASH=$(openssl passwd -apr1 "$TRAEFIK_ADMIN_PASSWORD")
 
+# Gerar senha para o pgAdmin
+PGADMIN_ADMIN_PASSWORD=$(openssl rand -base64 12 | tr -d "=+/")
+print_info "Senha admin pgAdmin gerada: $PGADMIN_ADMIN_PASSWORD"
+
 # Função para envio seguro de credenciais via API
 send_credentials_email() {
     local email="$1"
@@ -150,6 +154,7 @@ Data: $(date '+%d/%m/%Y às %H:%M')
 -----------------
 • n8n Editor: https://fluxos.$domain
 • n8n Webhook: https://webhook.$domain  
+• pgAdmin: http://$server_ip:4040
 • Portainer: https://$server_ip:9443
 • Traefik Dashboard: https://traefik.$domain
 
@@ -158,6 +163,10 @@ Data: $(date '+%d/%m/%Y às %H:%M')
 • n8n Admin:
   Email: $INITIAL_ADMIN_EMAIL
   Senha: $INITIAL_ADMIN_PASSWORD
+
+• pgAdmin:
+  Email: $INITIAL_ADMIN_EMAIL
+  Senha: $PGADMIN_ADMIN_PASSWORD
 
 • PostgreSQL:
   Usuário: postgres
@@ -253,6 +262,7 @@ docker volume create postgres_data >/dev/null 2>&1 || true
 docker volume create redis_data >/dev/null 2>&1 || true
 docker volume create traefik_certs >/dev/null 2>&1 || true
 docker volume create portainer_data >/dev/null 2>&1 || true
+docker volume create pgadmin_data >/dev/null 2>&1 || true
 print_success "Volumes criados"
 
 # 6. Criar arquivo .env
@@ -270,6 +280,9 @@ INITIAL_ADMIN_PASSWORD=$INITIAL_ADMIN_PASSWORD
 # Configurações do Traefik
 TRAEFIK_ADMIN_PASSWORD=$TRAEFIK_ADMIN_PASSWORD
 TRAEFIK_ADMIN_HASH=$TRAEFIK_ADMIN_HASH
+
+# Configurações do pgAdmin
+PGADMIN_ADMIN_PASSWORD=$PGADMIN_ADMIN_PASSWORD
 
 # URLs finais
 EDITOR_URL=https://fluxos.$DOMAIN
@@ -293,7 +306,7 @@ sleep 5
 print_success "Traefik instalado"
 
 # 9. Deploy automático das aplicações
-read -p "Deseja instalar automaticamente PostgreSQL + Redis + n8n? (Y/n): " AUTO_DEPLOY
+read -p "Deseja instalar automaticamente PostgreSQL + Redis + n8n + pgAdmin? (Y/n): " AUTO_DEPLOY
 if [[ ! "$AUTO_DEPLOY" =~ ^[Nn]$ ]]; then
     print_info "Deployando aplicações automaticamente..."
     
@@ -305,6 +318,7 @@ if [[ ! "$AUTO_DEPLOY" =~ ^[Nn]$ ]]; then
     export N8N_ENCRYPTION_KEY="$N8N_ENCRYPTION_KEY"
     export INITIAL_ADMIN_EMAIL="$INITIAL_ADMIN_EMAIL"
     export INITIAL_ADMIN_PASSWORD="$INITIAL_ADMIN_PASSWORD"
+    export PGADMIN_ADMIN_PASSWORD="$PGADMIN_ADMIN_PASSWORD"
     
     # Deploy PostgreSQL
     print_info "Instalando PostgreSQL..."
@@ -324,6 +338,11 @@ if [[ ! "$AUTO_DEPLOY" =~ ^[Nn]$ ]]; then
     docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook >/dev/null 2>&1
     docker stack deploy -c n8n/queue/orq_worker.yaml n8n_worker >/dev/null 2>&1
     print_success "n8n instalado"
+    
+    # Deploy pgAdmin
+    print_info "Instalando pgAdmin..."
+    docker stack deploy -c pgadmin/pgadmin.yaml pgadmin >/dev/null 2>&1
+    print_success "pgAdmin instalado"
     
     AUTO_DEPLOYED=true
 else
@@ -345,6 +364,18 @@ echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║         INSTALAÇÃO CONCLUÍDA!            ║"
 echo "╚══════════════════════════════════════════╝"
+echo ""
+echo "🚨 ⚠️  ATENÇÃO MUITO IMPORTANTE! ⚠️  🚨"
+echo ""
+print_error "📸 TIRE UM PRINT/SCREENSHOT DESTA TELA AGORA!"
+print_error "💾 SALVE AS CREDENCIAIS EM LOCAL SEGURO!"
+print_error "🔐 VOCÊ PRECISARÁ DESSAS SENHAS NO FUTURO!"
+echo ""
+echo "🎯 Por que isso é importante:"
+echo "   • Para alterações futuras no sistema"
+echo "   • Para recuperação de acesso"
+echo "   • Para manutenção e troubleshooting"
+echo "   • Para backup e migração"
 echo ""
 echo "📌 INFORMAÇÕES IMPORTANTES:"
 echo ""
@@ -368,15 +399,16 @@ fi
 
 if [[ "$AUTO_DEPLOYED" == "true" ]]; then
     echo "✅ APLICAÇÕES INSTALADAS AUTOMATICAMENTE:"
-    echo "   PostgreSQL + Redis + n8n (modo queue)"
+    echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin"
     echo ""
-    echo "🌐 URLs do n8n:"
-    echo "   Editor: https://fluxos.$DOMAIN"
-    echo "   Webhook: https://webhook.$DOMAIN"
+    echo "🌐 URLs dos serviços:"
+    echo "   n8n Editor: https://fluxos.$DOMAIN"
+    echo "   n8n Webhook: https://webhook.$DOMAIN"
+    echo "   pgAdmin: http://$SERVER_IP:4040"
     echo ""
-    echo "🔑 Credenciais do n8n:"
-    echo "   Email: $INITIAL_ADMIN_EMAIL"
-    echo "   Senha: $INITIAL_ADMIN_PASSWORD"
+    echo "🔑 Credenciais de acesso:"
+    echo "   n8n: $INITIAL_ADMIN_EMAIL / $INITIAL_ADMIN_PASSWORD"
+    echo "   pgAdmin: $INITIAL_ADMIN_EMAIL / $PGADMIN_ADMIN_PASSWORD"
     echo ""
     echo "🚀 PRÓXIMOS PASSOS:"
     echo ""
@@ -419,10 +451,17 @@ else
 fi
 
 echo ""
-echo "🔑 Todas as credenciais estão salvas em: .env"
+echo "🔑 ⚠️  CREDENCIAIS CRÍTICAS - SALVE ESTA INFORMAÇÃO! ⚠️"
+echo "📄 Arquivo .env criado com todas as credenciais"
+echo ""
+echo "🗂️  RESUMO DE TODAS AS SENHAS:"
 echo "   PostgreSQL: postgres / $DB_PASSWORD"
 echo "   Banco: $DATABASE"
 echo "   Traefik Dashboard: admin / $TRAEFIK_ADMIN_PASSWORD"
+echo "   pgAdmin: $INITIAL_ADMIN_EMAIL / $PGADMIN_ADMIN_PASSWORD"
+echo ""
+print_error "📸 TIRE UM PRINT DESTA TELA ANTES DE CONTINUAR!"
+print_error "💾 GUARDE AS SENHAS EM GERENCIADOR DE SENHAS!"
 
 if [[ "$EMAIL_SENT" == "true" ]]; then
     echo ""
@@ -436,4 +475,11 @@ echo "   docker-ctop                  # Monitor"
 echo "   docker service logs <nome>   # Ver logs"
 echo "   ./debug.sh                   # Diagnóstico completo"
 echo ""
+echo "🚨 LEMBRETE FINAL:"
+print_error "📸 VOCÊ TIROU O PRINT DAS CREDENCIAIS?"
+print_error "💾 VOCÊ SALVOU AS SENHAS EM LOCAL SEGURO?"
+echo ""
 echo "✅ Instalação concluída em $(date)"
+echo ""
+echo "⏰ Aguarde ~2 minutos antes de acessar os serviços"
+echo "🔄 Os containers precisam de tempo para inicializar"

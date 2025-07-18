@@ -54,6 +54,8 @@ webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
 traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
 ```
 
+**Nota**: pgAdmin não precisa de DNS, acesso direto via IP:4040
+
 ---
 
 ## 🔑 URLs de Acesso
@@ -72,6 +74,11 @@ traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
 - **URL**: https://traefik.SEU-DOMINIO.com
 - **Login**: admin / senha_gerada_automaticamente
 - **Função**: Monitoramento do proxy reverso e SSL
+
+### pgAdmin (Administração PostgreSQL)
+- **URL**: http://IP_DO_SERVIDOR:4040
+- **Login**: mesmo email da instalação / senha_gerada_automaticamente
+- **Função**: Interface web para administração do PostgreSQL
 
 ---
 

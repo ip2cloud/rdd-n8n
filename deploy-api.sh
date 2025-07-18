@@ -135,6 +135,13 @@ deploy_stack "n8n_worker" "n8n/queue/orq_worker.yaml" "[
   {\"name\": \"N8N_ENCRYPTION_KEY\", \"value\": \"${N8N_ENCRYPTION_KEY}\"}
 ]"
 
+# Deploy pgAdmin
+print_info "=== DEPLOY PGADMIN ==="
+deploy_stack "pgadmin" "pgadmin/pgadmin.yaml" "[
+  {\"name\": \"INITIAL_ADMIN_EMAIL\", \"value\": \"${INITIAL_ADMIN_EMAIL}\"},
+  {\"name\": \"PGADMIN_ADMIN_PASSWORD\", \"value\": \"${PGADMIN_ADMIN_PASSWORD}\"}
+]"
+
 echo ""
 print_success "Deploy completo via API!"
 print_info "Acesse o Portainer para verificar: ${PORTAINER_URL}"

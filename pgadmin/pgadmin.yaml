@@ -1,0 +1,42 @@
+version: "3.7"
+# definição dos serviços do stack
+services:
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    networks:
+    - network_swarm_databases
+    # Configuração de porta direta para acesso via IP
+    ports:
+    - 4040:80
+    environment:
+    # Email do administrador (mesmo usado na instalação)
+    - PGADMIN_DEFAULT_EMAIL=${INITIAL_ADMIN_EMAIL}
+    # Senha gerada automaticamente
+    - PGADMIN_DEFAULT_PASSWORD=${PGADMIN_ADMIN_PASSWORD}
+    volumes:
+    - pgadmin_data:/var/lib/pgadmin
+    deploy:
+      # configura o modo de deploy do serviço do pgadmin
+      mode: replicated
+      # configura o numero de replicas do serviço do pgadmin
+      replicas: 1
+      # Define a estratégia de deploy do serviço
+      placement:
+        constraints:
+        - node.role == manager
+      resources:
+        # configura os limites de recursos do serviço do pgadmin
+        limits:
+          # configura o limite de CPU do serviço do pgadmin
+          cpus: "0.5"
+          # configura o limite de memória do serviço do pgadmin
+          memory: 512M
+volumes:
+  pgadmin_data:
+    external: true
+    name: pgadmin_data
+
+networks:
+  network_swarm_databases:
+    external: true
+    name: network_swarm_databases
