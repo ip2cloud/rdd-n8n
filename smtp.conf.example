@@ -1,0 +1,14 @@
+# Configurações SMTP para envio de credenciais
+# Este arquivo deve ser copiado para /etc/n8n-installer/smtp.conf
+# e configurado com suas credenciais reais antes de usar o sistema de email
+
+# Chave API do SMTP LW
+SMTP_API_TOKEN=sua_chave_api_do_smtp_lw_aqui
+
+# URL da API (normalmente não precisa alterar)
+SMTP_API_URL=https://api.smtplw.com.br/v1/messages
+
+# IMPORTANTE:
+# 1. Este arquivo NÃO deve ser commitado no git com credenciais reais
+# 2. Mantenha este arquivo seguro no servidor de produção
+# 3. Use permissões restritivas: chmod 600 /etc/n8n-installer/smtp.conf

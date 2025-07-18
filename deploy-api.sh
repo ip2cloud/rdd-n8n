@@ -30,6 +30,16 @@ fi
 # Carregar variáveis do .env
 source .env
 
+# Verificar se Traefik precisa ser redeployado com novas credenciais
+print_info "Verificando Traefik..."
+if docker service ls | grep -q traefik_traefik; then
+    print_info "Atualizando Traefik com credenciais corretas..."
+    export DOMAIN TRAEFIK_ADMIN_HASH
+    docker stack deploy -c traefik/traefik.yaml traefik >/dev/null 2>&1
+    sleep 5
+    print_success "Traefik atualizado"
+fi
+
 # Solicitar credenciais do Portainer
 read -p "Usuário do Portainer [admin]: " PORTAINER_USER
 PORTAINER_USER=${PORTAINER_USER:-admin}

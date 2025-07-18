@@ -21,17 +21,24 @@ chmod +x install-simple.sh
 sudo ./install-simple.sh
 ```
 
-### 2️⃣ Responda 5 perguntas simples:
+### 2️⃣ (Opcional) Configure SMTP para envio de credenciais:
+
+```bash
+sudo ./setup-smtp.sh
+```
+
+### 3️⃣ Responda 5-6 perguntas simples:
 
 1. **Email do administrador**: seu-email@exemplo.com
 2. **Domínio principal**: exemplo.com  
 3. **Nome do banco** [ENTER = n8n]: nome_do_banco (opcional)
 4. **Senha do PostgreSQL** [ENTER = auto-gerar]: senha (opcional)
-5. **Deploy automático** [ENTER = Sim]: Y/n
+5. **Receber credenciais por email** [ENTER = Sim]: Y/n (se SMTP configurado)
+6. **Deploy automático** [ENTER = Sim]: Y/n
 
 > 💡 **Recomendado**: Tecle ENTER em tudo para usar os padrões
 
-### 3️⃣ Aguarde ~5 minutos e pronto! 
+### 4️⃣ Aguarde ~5 minutos e pronto! 
 
 ✅ **Tudo instalado automaticamente!**
 
@@ -44,6 +51,7 @@ Aponte os domínios para o IP do seu servidor:
 ```
 fluxos.SEU-DOMINIO.com   → IP_DO_SERVIDOR
 webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
+traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
 ```
 
 ---
@@ -60,19 +68,64 @@ webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
 - **Primeiro acesso**: Defina senha do admin
 - **Função**: Monitorar containers e serviços
 
+### Traefik (Dashboard do Proxy)
+- **URL**: https://traefik.SEU-DOMINIO.com
+- **Login**: admin / senha_gerada_automaticamente
+- **Função**: Monitoramento do proxy reverso e SSL
+
 ---
 
 ## ⏱️ Tempo de Instalação
 
-- **Interação**: 60 segundos (responder perguntas)
+- **Interação**: 60-90 segundos (responder perguntas)
 - **Instalação**: ~5 minutos (automática)
 - **Aguardar serviços**: ~2 minutos adicionais
 
 **Total**: ~8 minutos do início ao acesso
 
+## 📧 Sistema de Envio de Credenciais
+
+### 🔐 Configuração Segura
+- **Configuração externa**: Credenciais SMTP fora do código fonte
+- **Arquivo protegido**: `/etc/n8n-installer/smtp.conf` com permissões 600
+- **Fallback inteligente**: Se email falhar, exibe na tela
+- **Backup local**: Arquivo `.env` sempre mantido como backup
+
+### 📨 Como configurar:
+
+#### 1️⃣ Configure o SMTP (uma vez apenas):
+```bash
+sudo ./setup-smtp.sh
+```
+
+#### 2️⃣ Durante a instalação:
+- Se SMTP configurado: pergunta se quer email
+- Se SMTP não configurado: apenas credenciais na tela
+- Credenciais sempre exibidas na tela também
+- Arquivo `.env` sempre salvo localmente
+
+### 🔧 Configuração Manual (alternativa):
+```bash
+sudo mkdir -p /etc/n8n-installer
+sudo tee /etc/n8n-installer/smtp.conf > /dev/null <<EOF
+SMTP_API_TOKEN=sua_chave_api_aqui
+SMTP_API_URL=https://api.smtplw.com.br/v1/messages
+EOF
+sudo chmod 600 /etc/n8n-installer/smtp.conf
+```
+
 ---
 
 ## 🔧 Scripts Auxiliares Inclusos
+
+### Configuração SMTP
+```bash
+sudo ./setup-smtp.sh
+```
+- Configura credenciais para envio de email
+- Cria arquivo seguro `/etc/n8n-installer/smtp.conf`
+- Necessário apenas uma vez por servidor
+- Habilita envio de credenciais por email
 
 ### Diagnóstico e Monitoramento
 ```bash
@@ -124,6 +177,8 @@ N8N_ENCRYPTION_KEY=chave_gerada_automaticamente
 POSTGRES_PASSWORD=senha_gerada_automaticamente
 INITIAL_ADMIN_EMAIL=seu@email.com
 INITIAL_ADMIN_PASSWORD=senha_gerada_automaticamente
+TRAEFIK_ADMIN_PASSWORD=senha_gerada_automaticamente
+TRAEFIK_ADMIN_HASH=hash_gerado_automaticamente
 EDITOR_URL=https://fluxos.seu-dominio.com
 WEBHOOK_URL=https://webhook.seu-dominio.com
 ```

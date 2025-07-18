@@ -1,0 +1,24 @@
+# Arquivos de configuração com credenciais
+smtp.conf
+*.conf
+!*.conf.example
+
+# Arquivos de ambiente
+.env
+.env.*
+
+# Logs
+*.log
+
+# Arquivos temporários
+*.tmp
+*.temp
+
+# Credenciais e chaves
+*.key
+*.pem
+*.crt
+
+# Backups
+*.bak
+*.backup

@@ -45,7 +45,7 @@ services:
         - "traefik.http.services.traefik.loadbalancer.server.port=8080"
         # Middleware de autenticação para o dashboard
         - "traefik.http.routers.traefik.middlewares=traefik-auth"
-        - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:$$2y$$10$$8fHxKsH7c6PmLr3u3rVqFuP6OFCllbQhs7rSc7dCQcKpLQkqkqu7C"
+        - "traefik.http.middlewares.traefik-auth.basicauth.users=admin:${TRAEFIK_ADMIN_HASH}"
 
 volumes:
   traefik_certs:

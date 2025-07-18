@@ -68,12 +68,147 @@ if [[ -z "$DB_PASSWORD" ]]; then
     print_info "Senha gerada: $DB_PASSWORD"
 fi
 
+echo ""
+print_info "🔐 Segurança das Credenciais"
+echo ""
+
+# Verificar se SMTP está configurado
+SMTP_CONFIG_FILE="/etc/n8n-installer/smtp.conf"
+if [[ -f "$SMTP_CONFIG_FILE" ]]; then
+    print_success "SMTP configurado - envio de email disponível"
+    read -p "Deseja receber as credenciais por email? (Y/n): " SEND_EMAIL
+    if [[ ! "$SEND_EMAIL" =~ ^[Nn]$ ]]; then
+        read -p "Email para receber as credenciais: " CREDENTIALS_EMAIL
+        while [[ -z "$CREDENTIALS_EMAIL" ]] || [[ ! "$CREDENTIALS_EMAIL" =~ ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$ ]]; do
+            print_error "Email inválido ou vazio!"
+            read -p "Email para receber as credenciais: " CREDENTIALS_EMAIL
+        done
+        SEND_EMAIL_ENABLED=true
+        print_info "Credenciais serão enviadas para: $CREDENTIALS_EMAIL"
+    else
+        SEND_EMAIL_ENABLED=false
+        print_info "Credenciais serão exibidas apenas na tela"
+    fi
+else
+    print_info "SMTP não configurado - credenciais apenas na tela"
+    print_info "Para habilitar email: sudo ./setup-smtp.sh"
+    SEND_EMAIL_ENABLED=false
+fi
+
 # Gerar senha inicial para o admin do n8n
 INITIAL_ADMIN_PASSWORD=$(openssl rand -base64 12 | tr -d "=+/")
 print_info "Senha admin n8n gerada: $INITIAL_ADMIN_PASSWORD"
 
 # Gerar encryption key
 N8N_ENCRYPTION_KEY=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-32)
+
+# Gerar senha para o Traefik dashboard
+TRAEFIK_ADMIN_PASSWORD=$(openssl rand -base64 12 | tr -d "=+/")
+print_info "Senha admin Traefik gerada: $TRAEFIK_ADMIN_PASSWORD"
+
+# Gerar hash da senha para o Traefik (htpasswd format)
+TRAEFIK_ADMIN_HASH=$(openssl passwd -apr1 "$TRAEFIK_ADMIN_PASSWORD")
+
+# Função para envio seguro de credenciais via API
+send_credentials_email() {
+    local email="$1"
+    local domain="$2"
+    local server_ip="$3"
+    
+    # Verificar se arquivo de configuração SMTP existe
+    local smtp_config_file="/etc/n8n-installer/smtp.conf"
+    if [[ ! -f "$smtp_config_file" ]]; then
+        print_error "Arquivo de configuração SMTP não encontrado: $smtp_config_file"
+        print_info "Crie o arquivo com as credenciais:"
+        print_info "sudo mkdir -p /etc/n8n-installer"
+        print_info "sudo tee /etc/n8n-installer/smtp.conf > /dev/null <<EOF"
+        print_info "SMTP_API_TOKEN=sua_chave_api_aqui"
+        print_info "SMTP_API_URL=https://api.smtplw.com.br/v1/messages"
+        print_info "EOF"
+        return 1
+    fi
+    
+    # Carregar configurações SMTP
+    source "$smtp_config_file"
+    local api_token="$SMTP_API_TOKEN"
+    local api_url="${SMTP_API_URL:-https://api.smtplw.com.br/v1/messages}"
+    
+    if [[ -z "$api_token" ]]; then
+        print_error "SMTP_API_TOKEN não configurado em $smtp_config_file"
+        return 1
+    fi
+    
+    # Criar corpo do email
+    local email_body="🔐 CREDENCIAIS DE ACESSO - INSTALAÇÃO n8n
+======================================
+
+Servidor: $server_ip
+Domínio: $domain
+Data: $(date '+%d/%m/%Y às %H:%M')
+
+🌐 URLs DE ACESSO:
+-----------------
+• n8n Editor: https://fluxos.$domain
+• n8n Webhook: https://webhook.$domain  
+• Portainer: https://$server_ip:9443
+• Traefik Dashboard: https://traefik.$domain
+
+🔑 CREDENCIAIS:
+--------------
+• n8n Admin:
+  Email: $INITIAL_ADMIN_EMAIL
+  Senha: $INITIAL_ADMIN_PASSWORD
+
+• PostgreSQL:
+  Usuário: postgres
+  Senha: $DB_PASSWORD
+  Banco: $DATABASE
+
+• Traefik Dashboard:
+  Usuário: admin
+  Senha: $TRAEFIK_ADMIN_PASSWORD
+
+⚠️ IMPORTANTE:
+- Guarde estas credenciais em local seguro
+- Configure o DNS dos domínios apontando para $server_ip
+- Acesse o Portainer para definir senha de admin
+
+🛡️ SEGURANÇA:
+- Todas as senhas foram geradas automaticamente
+- Conexões SSL/TLS ativas
+- Sistema em Docker Swarm
+
+Instalação realizada com sucesso!
+Sistema n8n - $(date)"
+    
+    # Escapar aspas para JSON
+    email_body=$(echo "$email_body" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+    
+    # Criar payload JSON
+    local json_payload="{
+        \"subject\": \"[SEGURO] Credenciais da Instalação n8n - $domain\",
+        \"body\": \"$email_body\",
+        \"from\": \"sistema@$domain\",
+        \"to\": \"$email\",
+        \"headers\": {
+            \"Content-Type\": \"text/plain\"
+        }
+    }"
+    
+    # Enviar via API
+    local response=$(curl -s -X POST "$api_url" \
+        -H "Content-Type: application/json" \
+        -H "x-auth-token: $api_token" \
+        -d "$json_payload" 2>/dev/null)
+    
+    if echo "$response" | grep -q "\"success\".*true\|\"status\".*200\|\"sent\""; then
+        print_success "✅ Credenciais enviadas por email para: $email"
+        return 0
+    else
+        print_error "❌ Falha no envio do email. Credenciais serão exibidas na tela."
+        return 1
+    fi
+}
 
 # Começar instalação
 echo ""
@@ -132,6 +267,10 @@ POSTGRES_PASSWORD=$DB_PASSWORD
 INITIAL_ADMIN_EMAIL=$INITIAL_ADMIN_EMAIL
 INITIAL_ADMIN_PASSWORD=$INITIAL_ADMIN_PASSWORD
 
+# Configurações do Traefik
+TRAEFIK_ADMIN_PASSWORD=$TRAEFIK_ADMIN_PASSWORD
+TRAEFIK_ADMIN_HASH=$TRAEFIK_ADMIN_HASH
+
 # URLs finais
 EDITOR_URL=https://fluxos.$DOMAIN
 WEBHOOK_URL=https://webhook.$DOMAIN
@@ -147,7 +286,7 @@ print_success "Portainer instalado"
 
 # 8. Deploy Traefik
 print_info "Instalando Traefik..."
-export DOMAIN
+export DOMAIN TRAEFIK_ADMIN_HASH
 docker stack deploy -c traefik/traefik.yaml traefik >/dev/null 2>&1
 sleep 5
 print_success "Traefik instalado"
@@ -208,6 +347,19 @@ echo "   URL: https://$SERVER_IP:9443"
 echo "   ⚠️  Acesso inicial: Defina senha de admin na primeira vez!"
 echo ""
 
+# Tentar enviar credenciais por email se habilitado
+if [[ "$SEND_EMAIL_ENABLED" == "true" ]]; then
+    echo ""
+    print_info "📧 Enviando credenciais por email..."
+    if send_credentials_email "$CREDENTIALS_EMAIL" "$DOMAIN" "$SERVER_IP"; then
+        EMAIL_SENT=true
+    else
+        EMAIL_SENT=false
+    fi
+else
+    EMAIL_SENT=false
+fi
+
 if [[ "$AUTO_DEPLOYED" == "true" ]]; then
     echo "✅ APLICAÇÕES INSTALADAS AUTOMATICAMENTE:"
     echo "   PostgreSQL + Redis + n8n (modo queue)"
@@ -232,6 +384,10 @@ if [[ "$AUTO_DEPLOYED" == "true" ]]; then
     echo "3️⃣ MONITORE NO PORTAINER:"
     echo "   https://$SERVER_IP:9443"
     echo "   Verifique se todos os serviços estão rodando"
+    echo ""
+    echo "4️⃣ TRAEFIK DASHBOARD (opcional):"
+    echo "   https://traefik.$DOMAIN"
+    echo "   Login: admin / $TRAEFIK_ADMIN_PASSWORD"
 else
     echo "🔧 DEPLOY MANUAL NECESSÁRIO:"
     echo "   Use: ./deploy-api.sh (após configurar Portainer)"
@@ -260,6 +416,12 @@ echo ""
 echo "🔑 Todas as credenciais estão salvas em: .env"
 echo "   PostgreSQL: postgres / $DB_PASSWORD"
 echo "   Banco: $DATABASE"
+echo "   Traefik Dashboard: admin / $TRAEFIK_ADMIN_PASSWORD"
+
+if [[ "$EMAIL_SENT" == "true" ]]; then
+    echo ""
+    echo "📧 Credenciais também enviadas por email para: $CREDENTIALS_EMAIL"
+fi
 echo ""
 echo "📊 Comandos úteis:"
 echo "   docker stack ls              # Ver stacks"

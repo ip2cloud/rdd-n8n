@@ -26,7 +26,7 @@ services:
     # configura as variáveis de ambiente do serviço do postgres
     environment:
     # Define a senha do usuario postgres
-    - POSTGRES_PASSWORD=lWTgxiVOht0K80mQpdY5pYA
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     # Fix para a versão 16.1 do postgres
     - POSTGRES_INITDB_ARGS="--auth-host=scram-sha-256"
     # define o modo de deploy do container
