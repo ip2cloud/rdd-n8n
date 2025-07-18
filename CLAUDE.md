@@ -158,8 +158,8 @@ docker swarm leave --force
 # View all credentials
 cat .env
 
-# Resend credentials via email (if SMTP configured)
-source .env && ./send_credentials_email.sh
+# If you need to redeploy with correct credentials
+sudo ./install-simple.sh  # Just run installer again
 ```
 
 ## Technical Details

@@ -275,6 +275,7 @@ TRAEFIK_ADMIN_HASH=$TRAEFIK_ADMIN_HASH
 EDITOR_URL=https://fluxos.$DOMAIN
 WEBHOOK_URL=https://webhook.$DOMAIN
 EOF
+
 print_success "Configurações salvas em .env"
 
 # 7. Deploy Portainer
@@ -296,9 +297,17 @@ read -p "Deseja instalar automaticamente PostgreSQL + Redis + n8n? (Y/n): " AUTO
 if [[ ! "$AUTO_DEPLOY" =~ ^[Nn]$ ]]; then
     print_info "Deployando aplicações automaticamente..."
     
+    # Exportar todas as variáveis necessárias antes dos deploys
+    export DOMAIN="$DOMAIN"
+    export DATABASE="$DATABASE" 
+    export DATABASE_PASSWORD="$DB_PASSWORD"
+    export POSTGRES_PASSWORD="$DB_PASSWORD"
+    export N8N_ENCRYPTION_KEY="$N8N_ENCRYPTION_KEY"
+    export INITIAL_ADMIN_EMAIL="$INITIAL_ADMIN_EMAIL"
+    export INITIAL_ADMIN_PASSWORD="$INITIAL_ADMIN_PASSWORD"
+    
     # Deploy PostgreSQL
     print_info "Instalando PostgreSQL..."
-    export POSTGRES_PASSWORD=$DB_PASSWORD
     docker stack deploy -c postgres16/postgres.yaml postgres >/dev/null 2>&1
     sleep 10
     print_success "PostgreSQL instalado"
@@ -311,9 +320,6 @@ if [[ ! "$AUTO_DEPLOY" =~ ^[Nn]$ ]]; then
     
     # Deploy n8n
     print_info "Instalando n8n (modo queue)..."
-    # Carregar todas as variáveis do .env
-    source .env
-    export DOMAIN DATABASE DATABASE_PASSWORD N8N_ENCRYPTION_KEY INITIAL_ADMIN_EMAIL INITIAL_ADMIN_PASSWORD
     docker stack deploy -c n8n/queue/orq_editor.yaml n8n_editor >/dev/null 2>&1
     docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook >/dev/null 2>&1
     docker stack deploy -c n8n/queue/orq_worker.yaml n8n_worker >/dev/null 2>&1

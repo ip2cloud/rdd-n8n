@@ -30,6 +30,7 @@ fi
 # Carregar variáveis do .env
 source .env
 
+
 # Verificar se Traefik precisa ser redeployado com novas credenciais
 print_info "Verificando Traefik..."
 if docker service ls | grep -q traefik_traefik; then
