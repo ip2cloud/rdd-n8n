@@ -98,7 +98,8 @@ deploy_stack() {
 # Deploy PostgreSQL
 print_info "=== DEPLOY POSTGRESQL ==="
 deploy_stack "postgres" "postgres16/postgres.yaml" "[
-  {\"name\": \"POSTGRES_PASSWORD\", \"value\": \"${POSTGRES_PASSWORD}\"}
+  {\"name\": \"POSTGRES_PASSWORD\", \"value\": \"${POSTGRES_PASSWORD}\"},
+  {\"name\": \"DATABASE\", \"value\": \"${DATABASE}\"}
 ]"
 
 # Deploy Redis

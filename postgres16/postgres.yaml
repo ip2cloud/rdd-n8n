@@ -27,6 +27,8 @@ services:
     environment:
     # Define a senha do usuario postgres
     - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    # Cria automaticamente o banco de dados
+    - POSTGRES_DB=${DATABASE}
     # Fix para a versão 16.1 do postgres
     - POSTGRES_INITDB_ARGS="--auth-host=scram-sha-256"
     # define o modo de deploy do container

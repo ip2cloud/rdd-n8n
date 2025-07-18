@@ -163,6 +163,14 @@ sudo ./uninstall.sh
 - Usa API do Portainer para deploy
 - Não requer upload manual de arquivos
 
+### Criação Manual do Banco (se necessário)
+```bash
+./create-database.sh
+```
+- Cria o banco n8n manualmente se não foi criado automaticamente
+- Conecta no PostgreSQL e executa CREATE DATABASE
+- Útil para resolver erro "database does not exist"
+
 ---
 
 ## 🔧 Variáveis de Ambiente
@@ -232,6 +240,12 @@ docker service logs n8n_editor_n8n
 1. ✅ Verifique se o DNS está configurado
 2. ✅ Aguarde ~2 minutos para todos os serviços subirem
 3. ✅ Verifique no Portainer se todos estão rodando
+
+### Erro "database does not exist"?
+```bash
+# Criar banco manualmente se necessário
+./create-database.sh
+```
 
 ### Portainer não acessa?
 ```bash
