@@ -172,6 +172,8 @@ if [[ ! "$AUTO_DEPLOY" =~ ^[Nn]$ ]]; then
     
     # Deploy n8n
     print_info "Instalando n8n (modo queue)..."
+    # Carregar todas as variáveis do .env
+    source .env
     export DOMAIN DATABASE DATABASE_PASSWORD N8N_ENCRYPTION_KEY INITIAL_ADMIN_EMAIL INITIAL_ADMIN_PASSWORD
     docker stack deploy -c n8n/queue/orq_editor.yaml n8n_editor >/dev/null 2>&1
     docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook >/dev/null 2>&1

@@ -4,7 +4,7 @@ services:
   # Definição do Serviço do Worker
   n8n_worker_ip2:
     # imagem do docker
-    image: n8nio/n8n:1.90.1
+    image: n8nio/n8n:1.100.1
     # Define o hotname do container
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
     # comando padrão para subir o servidor web
@@ -26,7 +26,7 @@ services:
     #########################################################
     #########################################################
     # Gere uma nova chave aqui https://www.avast.com/random-password-generator#mac
-    - N8N_ENCRYPTION_KEY=q6i/8GKv11nJBHpwGyuZu34CN3aZ7rMv
+    - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
     # Configura o ambiente de execução do N8N
     - NODE_ENV=production
     # Habilita a Página de Métricas Públicas do N8N
@@ -163,6 +163,8 @@ services:
     - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
     # Habilita o uso de pacotes da comunidade
     - N8N_COMMUNITY_PACKAGES_ENABLED=true
+
+    - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
     # Reinstalar os Community Nodes
     - N8N_REINSTALL_MISSING_PACKAGES=true
     #########################################################
