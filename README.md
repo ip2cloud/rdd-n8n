@@ -125,6 +125,26 @@ sudo chmod 600 /etc/n8n-installer/smtp.conf
 
 ## 🔧 Scripts Auxiliares Inclusos
 
+### Atualização do n8n
+```bash
+sudo ./update-n8n.sh
+```
+- Atualiza n8n para qualquer versão disponível
+- Busca versões automaticamente no Docker Hub
+- Interface interativa com seleção por menu
+- Backup automático dos arquivos YAML
+- Deploy sequencial otimizado (Editor → Webhook → Worker)
+- Validação de imagens antes da atualização
+
+### Configuração SSL/TLS
+```bash
+sudo ./update-ssl.sh
+```
+- Configura certificados Let's Encrypt automaticamente
+- Atualiza Traefik com resolver SSL
+- Redeploy de todos os serviços com certificados
+- Certificados automáticos para todos os domínios
+
 ### Configuração SMTP
 ```bash
 sudo ./setup-smtp.sh
@@ -302,18 +322,58 @@ sudo ./install-simple.sh
 ```
 fluxos.SEU-DOMINIO.com   → IP_DO_SERVIDOR
 webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
+traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
 ```
 
-### 2️⃣ Aguarde ~2 minutos
+### 2️⃣ Configure SSL (Recomendado)
+```bash
+sudo ./update-ssl.sh
+```
+- Configura certificados Let's Encrypt automaticamente
+- Aguarde ~2 minutos para emissão dos certificados
+
+### 3️⃣ Aguarde ~2 minutos
 Os serviços precisam de um tempo para inicializar completamente.
 
-### 3️⃣ Acesse o n8n
+### 4️⃣ Acesse o n8n
 - URL: https://fluxos.SEU-DOMINIO.com
 - Use as credenciais mostradas no final da instalação
 
-### 4️⃣ Monitore no Portainer (opcional)
+### 5️⃣ Monitore no Portainer (opcional)
 - URL: https://IP_DO_SERVIDOR:9443
 - Crie senha do admin no primeiro acesso
+- ⚠️ **IMPORTANTE**: Acesse em até 10 minutos após instalação
+
+### 6️⃣ Acesse pgAdmin (se necessário)
+- URL: http://IP_DO_SERVIDOR:4040
+- Login: email da instalação / senha gerada automaticamente
+- Para administração do PostgreSQL
+
+---
+
+## 🔄 Manutenção e Atualizações
+
+### Atualizar n8n para Nova Versão
+```bash
+sudo ./update-n8n.sh
+```
+- Interface interativa para selecionar versões
+- Backup automático antes da atualização
+- Deploy otimizado com delays apropriados
+
+### Configurar SSL/TLS
+```bash
+sudo ./update-ssl.sh
+```
+- Configura certificados Let's Encrypt
+- Redeploy automático com SSL ativo
+
+### Verificar Status dos Serviços
+```bash
+./debug.sh
+docker service ls
+docker stack ls
+```
 
 ---
 
@@ -322,3 +382,15 @@ Os serviços precisam de um tempo para inicializar completamente.
 **✅ Instalação super simplificada do n8n com PostgreSQL e Redis!**
 
 Tudo funciona automaticamente com SSL via Traefik e modo queue para alta performance.
+
+### 🚀 Principais Recursos:
+- ✅ **Docker Swarm** - Orquestração robusta
+- ✅ **n8n Queue Mode** - Editor + Webhook + Worker  
+- ✅ **PostgreSQL 16** - Banco de dados principal
+- ✅ **Redis 7** - Cache e filas de trabalho
+- ✅ **Traefik v3** - Proxy reverso com SSL automático
+- ✅ **Portainer** - Interface de gerenciamento
+- ✅ **pgAdmin 4** - Administração PostgreSQL
+- ✅ **Let's Encrypt** - Certificados SSL gratuitos
+- ✅ **Sistema SMTP** - Envio seguro de credenciais
+- ✅ **Scripts de Manutenção** - Atualização, diagnóstico, limpeza

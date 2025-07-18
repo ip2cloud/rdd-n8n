@@ -25,6 +25,8 @@ The project uses a **fully automated approach** with optional email integration:
 
 ### Main Scripts
 - `install-simple.sh` - Complete automated installer (deploys everything)
+- `update-n8n.sh` - Update n8n to any available version (interactive menu)
+- `update-ssl.sh` - Configure Let's Encrypt SSL certificates automatically
 - `setup-smtp.sh` - Configure SMTP for secure credential delivery
 - `deploy-api.sh` - API-based deployment alternative (if needed)
 
@@ -39,7 +41,7 @@ The project uses a **fully automated approach** with optional email integration:
 - `.gitignore` - Prevents credential files from being committed
 
 ### Service Configurations
-- `traefik/traefik.yaml` - Traefik v3 reverse proxy with dynamic credentials
+- `traefik/traefik.yaml` - Traefik v3 reverse proxy with Let's Encrypt support
 - `portainer/portainer.yaml` - Portainer Docker management UI
 - `postgres16/postgres.yaml` - PostgreSQL 16 with dynamic password
 - `redis/redis.yaml` - Redis 7 for caching and queues
@@ -62,7 +64,7 @@ The project uses a **fully automated approach** with optional email integration:
 - **Dynamic passwords**: All credentials generated automatically
 - **External SMTP config**: Credentials stored in `/etc/n8n-installer/smtp.conf`
 - **Secure permissions**: Config files with 600 permissions
-- **SSL everywhere**: Traefik handles automatic HTTPS
+- **SSL everywhere**: Traefik handles automatic HTTPS with Let's Encrypt
 - **No hardcoded secrets**: Repository safe for public git
 
 ### Service URLs
@@ -135,7 +137,32 @@ docker stack ls               # List all stacks
 docker service logs SERVICE   # View service logs
 ```
 
-### Update Services
+### Update n8n Version
+```bash
+# Interactive version selection
+sudo ./update-n8n.sh
+
+# Features:
+# - Lists available versions from Docker Hub
+# - Shows current installed version
+# - Validates image before update
+# - Automatic backup of configurations
+# - Sequential deployment with proper delays
+```
+
+### Configure SSL Certificates
+```bash
+# Enable Let's Encrypt
+sudo ./update-ssl.sh
+
+# What it does:
+# - Configures Traefik with Let's Encrypt
+# - Updates all services with certresolver
+# - Automatic certificate renewal
+# - Works for all configured domains
+```
+
+### Update Services Manually
 ```bash
 # Update single service
 docker service update SERVICE_NAME
@@ -178,9 +205,11 @@ sudo ./install-simple.sh  # Just run installer again
 
 ### Traefik Integration
 - Automatic service discovery via Docker labels
-- Dynamic SSL certificate generation
+- Let's Encrypt certificate generation via ACME
+- TLS challenge for certificate validation
 - Load balancing and health checks
 - Password-protected dashboard
+- Certificate resolver: `letsencrypt`
 
 ### Volume Management
 - `postgres_data` - PostgreSQL database storage
@@ -222,3 +251,16 @@ sudo ./install-simple.sh  # Just run installer again
 - **Authentication**: Uses same email as n8n admin + auto-generated password
 - **Security**: No SSL termination (internal network access recommended)
 - **Database connection**: Automatically configured for local PostgreSQL
+
+### Update System Notes
+- **update-n8n.sh**: Interactive version selector with Docker Hub integration
+- **update-ssl.sh**: Automatic Let's Encrypt configuration for all services
+- **Backup Strategy**: All update scripts create timestamped backups
+- **Version Management**: Supports any n8n version available on Docker Hub
+
+### SSL/TLS Configuration
+- **Certificate Provider**: Let's Encrypt via ACME protocol
+- **Challenge Type**: TLS-ALPN-01 (port 443)
+- **Storage**: `/certs/acme.json` in traefik_certs volume
+- **Renewal**: Automatic via Traefik
+- **Domains**: All configured subdomains get individual certificates
