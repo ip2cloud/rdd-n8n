@@ -43,8 +43,6 @@ services:
       # Configura a Permissão do Arquivo de Configuração
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - NODE_OPTIONS="--max_old_space_size=4096"
-      - N8N_RUNNERS_ENABLED=true
-      - N8N_RUNNERS_MODE=internal
       - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKES=true
       #########################################################
       #########################################################
@@ -181,14 +179,17 @@ services:
       - N8N_AI_PROVIDER=openai
       # Habilita o uso de pacotes da comunidade
       - N8N_AI_OPENAI_API_KEY=
-    #########################################################
-    #########################################################
-    #########################################################
-    # Configuração dos E-mails (Multi-user) #################
-    #########################################################
-    #########################################################
-    #########################################################
 
+      #########################################################
+      #########################################################
+      # VARIAVEIS V2 N8N WEBHOOK ##############################
+      #########################################################
+      #########################################################
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_RUNNERS_MODE=internal
+      - NODE_EXCLUDE="[]"
     # Configura o Modo de Deploy da Aplicação
     deploy:
       # O editor será executado no modo de replicação
