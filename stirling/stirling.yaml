@@ -1,0 +1,56 @@
+version: "3.7"
+
+########################################
+#
+# Stack do Stirling PDF
+#
+########################################
+
+services:
+  stirling-pdf:
+    image: frooodle/s-pdf:alpha
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    networks:
+    - network_swarm_public
+
+    volumes:
+    - trainingData:/usr/share/tessdata
+    - extraConfigs:/configs
+    environment:
+    - DOCKER_ENABLE_SECURITY=true
+    - INSTALL_BOOK_AND_ADVANCED_HTML_OPS=false
+    - LANGS=pt_BR
+    - SECURITY_ENABLE_LOGIN=true
+    - SECURITY_INITIALLOGIN_USERNAME=alfredo
+    - SECURITY_INITIALLOGIN_PASSWORD=sabocinski
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+        - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2048M
+      labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.stirling-pdf.rule=Host(`stir.${DOMAIN}`)"
+      - "traefik.http.routers.stirling-pdf.entrypoints=websecure"
+      - "traefik.http.routers.stirling-pdf.tls=true"
+      - "traefik.http.routers.stirling-pdf.tls.certresolver=letsencrypt"
+      - "traefik.http.services.stirling-pdf.loadbalancer.server.port=8080"
+      - "traefik.http.routers.stirling-pdf.service=stirling-pdf"
+
+volumes:
+  trainingData:
+    external: true
+    name: trainingData
+  extraConfigs:
+    external: true
+    name: extraConfigs
+
+networks:
+  network_swarm_public:
+    external: true
+    name: network_swarm_public
