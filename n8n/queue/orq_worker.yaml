@@ -2,7 +2,7 @@ version: "3.7"
 # Definição dos Serviços
 services:
   # Definição do Serviço do Worker
-  n8nv2_worker_ip2:
+  n8n_worker_ip2:
     # imagem do docker
     image: n8nio/n8n:1.123.7
     # Define o hotname do container
