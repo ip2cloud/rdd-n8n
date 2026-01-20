@@ -24,13 +24,15 @@ show_final_info() {
     echo ""
     echo "🌐 URLs DOS SERVIÇOS:"
     echo "   n8n Editor: https://fluxos.$domain"
-    echo "   n8n Webhook: https://webhook.$domain" 
+    echo "   n8n Webhook: https://webhook.$domain"
+    echo "   Evolution API: https://evo.$domain"
     echo "   pgAdmin: http://$server_ip:4040"
     echo "   Portainer: https://$server_ip:9443"
     echo "   Traefik: https://traefik.$domain"
     echo ""
     echo "🔑 CREDENCIAIS:"
     echo "   n8n: $admin_email / $admin_password"
+    echo "   Evolution API Key: ${EVOLUTION_API_KEY}"
     echo "   pgAdmin: $admin_email / $pgadmin_password"
     echo "   Traefik: admin / $traefik_password"
     echo "   PostgreSQL: postgres / $db_password"
@@ -39,10 +41,11 @@ show_final_info() {
     echo "   https://$server_ip:9443"
     echo ""
     echo "📋 PRÓXIMOS PASSOS:"
-    echo "1. Acesse Portainer: https://$server_ip:9443" 
+    echo "1. Acesse Portainer: https://$server_ip:9443"
     echo "2. Configure DNS: fluxos.$domain → $server_ip"
     echo "3. Configure DNS: webhook.$domain → $server_ip"
-    echo "4. Acesse n8n: https://fluxos.$domain"
+    echo "4. Configure DNS: evo.$domain → $server_ip"
+    echo "5. Acesse n8n: https://fluxos.$domain"
     echo ""
     print_error "📸 SALVE ESTE PRINT EM LOCAL SEGURO!"
     echo ""
@@ -157,6 +160,13 @@ TRAEFIK_ADMIN_HASH=$(openssl passwd -apr1 "$TRAEFIK_ADMIN_PASSWORD")
 # Gerar senha para o pgAdmin
 PGADMIN_ADMIN_PASSWORD=$(openssl rand -base64 12 | tr -d "=+/")
 print_info "Senha admin pgAdmin gerada: $PGADMIN_ADMIN_PASSWORD"
+
+# Gerar API Key do Evolution (32 caracteres)
+EVOLUTION_API_KEY=$(openssl rand -hex 16 | tr -d '\n')
+print_info "API Key Evolution gerada: $EVOLUTION_API_KEY"
+
+# Nome do banco Evolution
+EVOLUTION_DATABASE="${DATABASE}_evolution"
 
 # Função para envio seguro de credenciais via API
 send_credentials_email() {
@@ -308,6 +318,7 @@ docker volume create redis_data >/dev/null 2>&1 || true
 docker volume create traefik_certs >/dev/null 2>&1 || true
 docker volume create portainer_data >/dev/null 2>&1 || true
 docker volume create pgadmin_data >/dev/null 2>&1 || true
+docker volume create evolution_v2_data >/dev/null 2>&1 || true
 print_success "Volumes criados"
 
 # 6. Criar arquivo .env
@@ -328,6 +339,11 @@ TRAEFIK_ADMIN_HASH=$TRAEFIK_ADMIN_HASH
 
 # Configurações do pgAdmin
 PGADMIN_ADMIN_PASSWORD=$PGADMIN_ADMIN_PASSWORD
+
+# Configurações do Evolution API
+EVOLUTION_API_KEY=$EVOLUTION_API_KEY
+EVOLUTION_DATABASE=$EVOLUTION_DATABASE
+EVOLUTION_URL=https://evo.$DOMAIN
 
 # URLs finais
 EDITOR_URL=https://fluxos.$DOMAIN
@@ -394,7 +410,17 @@ if [[ ! "$AUTO_DEPLOY" =~ ^[Nn]$ ]]; then
     print_info "Instalando pgAdmin..."
     docker stack deploy -c pgadmin/pgadmin.yaml pgadmin >/dev/null 2>&1
     print_success "pgAdmin instalado"
-    
+
+    # Exportar variáveis do Evolution
+    export EVOLUTION_API_KEY="$EVOLUTION_API_KEY"
+    export EVOLUTION_DATABASE="$EVOLUTION_DATABASE"
+
+    # Deploy Evolution API (cria o banco automaticamente)
+    print_info "Instalando Evolution API..."
+    docker stack deploy -c evolution/evolution.yaml evolution >/dev/null 2>&1
+    sleep 5
+    print_success "Evolution API instalado (banco será criado automaticamente)"
+
     AUTO_DEPLOYED=true
 else
     AUTO_DEPLOYED=false
@@ -441,6 +467,7 @@ echo ""
 echo "🌐 === URLS DOS SERVIÇOS ==="
 echo "   n8n Editor: https://fluxos.$DOMAIN"
 echo "   n8n Webhook: https://webhook.$DOMAIN"
+echo "   Evolution API: https://evo.$DOMAIN"
 echo "   pgAdmin: http://$SERVER_IP:4040"
 echo "   Portainer: https://$SERVER_IP:9443"
 echo "   Traefik Dashboard: https://traefik.$DOMAIN"
@@ -448,6 +475,7 @@ echo ""
 
 echo "🔑 === CREDENCIAIS DE ACESSO ==="
 echo "   n8n: $INITIAL_ADMIN_EMAIL / $INITIAL_ADMIN_PASSWORD"
+echo "   Evolution API Key: $EVOLUTION_API_KEY"
 echo "   pgAdmin: $INITIAL_ADMIN_EMAIL / $PGADMIN_ADMIN_PASSWORD"
 echo "   Traefik: admin / $TRAEFIK_ADMIN_PASSWORD"
 echo "   PostgreSQL: postgres / $DB_PASSWORD"
@@ -463,7 +491,8 @@ echo "📋 === PRÓXIMOS PASSOS ==="
 echo "1️⃣ ACESSE O PORTAINER AGORA: https://$SERVER_IP:9443"
 echo "2️⃣ CONFIGURE DNS: fluxos.$DOMAIN → $SERVER_IP"
 echo "3️⃣ CONFIGURE DNS: webhook.$DOMAIN → $SERVER_IP"
-echo "4️⃣ AGUARDE 2 MIN e acesse: https://fluxos.$DOMAIN"
+echo "4️⃣ CONFIGURE DNS: evo.$DOMAIN → $SERVER_IP"
+echo "5️⃣ AGUARDE 2 MIN e acesse: https://fluxos.$DOMAIN"
 echo ""
 
 # Email section removida para evitar travamentos
@@ -474,6 +503,7 @@ echo "DEBUG: Email section bypassed"
 echo "🌐 URLs DOS SERVIÇOS:"
 echo "   n8n Editor: https://fluxos.$DOMAIN"
 echo "   n8n Webhook: https://webhook.$DOMAIN"
+echo "   Evolution API: https://evo.$DOMAIN"
 echo "   pgAdmin: http://$SERVER_IP:4040"
 echo "   Portainer: https://$SERVER_IP:9443"
 echo "   Traefik Dashboard: https://traefik.$DOMAIN"
@@ -481,6 +511,7 @@ echo ""
 
 echo "🔑 CREDENCIAIS DE ACESSO:"
 echo "   n8n: $INITIAL_ADMIN_EMAIL / $INITIAL_ADMIN_PASSWORD"
+echo "   Evolution API Key: $EVOLUTION_API_KEY"
 echo "   pgAdmin: $INITIAL_ADMIN_EMAIL / $PGADMIN_ADMIN_PASSWORD"
 echo "   Traefik: admin / $TRAEFIK_ADMIN_PASSWORD"
 echo ""
@@ -496,11 +527,12 @@ echo ""
 echo "DEBUG: Verificando AUTO_DEPLOYED: $AUTO_DEPLOYED"
 if [[ "$AUTO_DEPLOYED" == "true" ]]; then
     echo "✅ APLICAÇÕES INSTALADAS AUTOMATICAMENTE:"
-    echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin"
+    echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin + Evolution API"
     echo ""
     echo "2️⃣ CONFIGURE O DNS:"
     echo "   fluxos.$DOMAIN → $SERVER_IP"
     echo "   webhook.$DOMAIN → $SERVER_IP"
+    echo "   evo.$DOMAIN → $SERVER_IP"
     echo "   traefik.$DOMAIN → $SERVER_IP (opcional)"
     echo ""
     echo "3️⃣ AGUARDE ~2 MINUTOS e acesse:"
@@ -516,6 +548,7 @@ else
     echo "2️⃣ CONFIGURE O DNS:"
     echo "   fluxos.$DOMAIN → $SERVER_IP"
     echo "   webhook.$DOMAIN → $SERVER_IP"
+    echo "   evo.$DOMAIN → $SERVER_IP"
     echo "   traefik.$DOMAIN → $SERVER_IP (opcional)"
     echo ""
     echo "3️⃣ DEPLOY VIA API:"
@@ -562,6 +595,7 @@ echo ""
 echo "🎯 RESUMO FINAL:"
 echo "   • Portainer: https://$SERVER_IP:9443 (10 min para configurar!)"
 echo "   • n8n: https://fluxos.$DOMAIN (após configurar DNS)"
+echo "   • Evolution API: https://evo.$DOMAIN (após configurar DNS)"
 echo "   • pgAdmin: http://$SERVER_IP:4040"
 echo ""
 print_error "📸 NÃO ESQUEÇA DE SALVAR ESTE PRINT!"

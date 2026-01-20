@@ -2,9 +2,9 @@ version: "3.7"
 # Definição dos Serviços
 services:
   # Definição do Serviço do Editor
-  n8n_editor_ip2:
+  n8n_editor_rdd:
     # imagem do docker
-    image: n8nio/n8n:1.123.7
+    image: n8nio/n8n:2.4.3
     # Define o hotname do container
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
     # comando padrão para subir o servidor web do editor
@@ -41,10 +41,7 @@ services:
       # Configura o Timezone do N8N
       - GENERIC_TIMEZONE=America/Sao_Paulo
       # Configura a Permissão do Arquivo de Configuração
-      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - NODE_OPTIONS="--max_old_space_size=4096"
-      - N8N_RUNNERS_ENABLED=true
-      - N8N_RUNNERS_MODE=internal
       - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKES=true
       #########################################################
       #########################################################
@@ -193,9 +190,19 @@ services:
       - N8N_AI_PROVIDER=openai
       # Habilita o uso de pacotes da comunidade
       - N8N_AI_OPENAI_API_KEY=
-    #########################################################
-    #########################################################
-    #########################################################
+      #########################################################
+      #########################################################
+      #########################################################
+      # VARIAVEIS V2 N8N EDITOR ##############################3
+      #########################################################
+      #########################################################
+      #########################################################
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_RUNNERS_MODE=internal
+      - NODE_EXCLUDE="[]"
+      - N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=false
 
     # Configura o Modo de Deploy da Aplicação
     deploy:

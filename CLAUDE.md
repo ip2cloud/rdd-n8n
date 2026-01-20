@@ -6,8 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **fully automated Docker Swarm deployment project** for n8n workflow automation platform. The project provides a one-click installation that sets up a complete production-ready environment with:
 - Docker Swarm orchestration
-- PostgreSQL 16 + Redis 7 databases  
+- PostgreSQL 16 + Redis 7 databases
 - n8n in queue mode (editor + webhook + worker)
+- Evolution API v2.3.6 for WhatsApp Multi-Device integration
 - Traefik reverse proxy with automatic SSL
 - Portainer for container management
 - pgAdmin 4 for PostgreSQL administration
@@ -24,8 +25,9 @@ The project uses a **fully automated approach** with optional email integration:
 ## Key Files
 
 ### Main Scripts
-- `install-simple.sh` - Complete automated installer (deploys everything)
+- `install-simple.sh` - Complete automated installer (deploys everything including Evolution API)
 - `update-n8n.sh` - Update n8n to any available version (interactive menu)
+- `update-evolution.sh` - Update Evolution API to any available version (interactive menu)
 - `update-ssl.sh` - Configure Let's Encrypt SSL certificates automatically
 - `setup-smtp.sh` - Configure SMTP for secure credential delivery
 - `deploy-api.sh` - API-based deployment alternative (if needed)
@@ -45,9 +47,10 @@ The project uses a **fully automated approach** with optional email integration:
 - `portainer/portainer.yaml` - Portainer Docker management UI
 - `postgres16/postgres.yaml` - PostgreSQL 16 with dynamic password
 - `redis/redis.yaml` - Redis 7 for caching and queues
-- `n8n/queue/orq_editor.yaml` - n8n editor interface (v1.100.1)
-- `n8n/queue/orq_webhook.yaml` - n8n webhook handler (v1.100.1)  
-- `n8n/queue/orq_worker.yaml` - n8n background worker (v1.100.1)
+- `n8n/queue/orq_editor.yaml` - n8n editor interface (v1.123.7)
+- `n8n/queue/orq_webhook.yaml` - n8n webhook handler (v1.123.7)
+- `n8n/queue/orq_worker.yaml` - n8n background worker (v1.123.7)
+- `evolution/evolution.yaml` - Evolution API v2.3.6 for WhatsApp Multi-Device
 - `pgadmin/pgadmin.yaml` - pgAdmin 4 web interface (direct IP:4040 access)
 
 ### Documentation
@@ -71,6 +74,7 @@ The project uses a **fully automated approach** with optional email integration:
 - **Portainer**: `https://SERVER_IP:9443`
 - **n8n Editor**: `https://fluxos.DOMAIN`
 - **n8n Webhooks**: `https://webhook.DOMAIN`
+- **Evolution API**: `https://evo.DOMAIN`
 - **pgAdmin**: `http://SERVER_IP:4040` (direct access, no Traefik)
 - **Traefik Dashboard**: `https://traefik.DOMAIN` (with auth)
 
@@ -88,6 +92,9 @@ INITIAL_ADMIN_PASSWORD=generated_password
 TRAEFIK_ADMIN_PASSWORD=generated_password
 TRAEFIK_ADMIN_HASH=generated_hash
 PGADMIN_ADMIN_PASSWORD=generated_password
+EVOLUTION_API_KEY=generated_key
+EVOLUTION_DATABASE=n8n_evolution
+EVOLUTION_URL=https://evo.user-domain.com
 EDITOR_URL=https://fluxos.user-domain.com
 WEBHOOK_URL=https://webhook.user-domain.com
 ```
@@ -121,6 +128,7 @@ sudo chmod 600 /etc/n8n-installer/smtp.conf
 3. Choose automatic deployment (default: Yes)
 4. Wait ~5 minutes for complete setup
 5. Access n8n at `https://fluxos.DOMAIN`
+6. Access Evolution API at `https://evo.DOMAIN`
 
 ### Manual Deployment (Alternative)
 1. Choose manual deployment during installation
@@ -148,6 +156,19 @@ sudo ./update-n8n.sh
 # - Validates image before update
 # - Automatic backup of configurations
 # - Sequential deployment with proper delays
+```
+
+### Update Evolution API Version
+```bash
+# Interactive version selection
+sudo ./update-evolution.sh
+
+# Features:
+# - Lists available versions from Docker Hub
+# - Shows current installed version
+# - Validates image before update
+# - Automatic backup of configuration
+# - Immediate deployment
 ```
 
 ### Configure SSL Certificates
@@ -217,6 +238,7 @@ sudo ./install-simple.sh  # Just run installer again
 - `traefik_certs` - SSL certificate storage
 - `portainer_data` - Portainer configuration
 - `pgadmin_data` - pgAdmin 4 configuration and logs
+- `evolution_v2_data` - Evolution API instances and media storage
 
 ## Important Notes
 
@@ -254,13 +276,25 @@ sudo ./install-simple.sh  # Just run installer again
 
 ### Update System Notes
 - **update-n8n.sh**: Interactive version selector with Docker Hub integration
+- **update-evolution.sh**: Interactive version selector for Evolution API updates
 - **update-ssl.sh**: Automatic Let's Encrypt configuration for all services
 - **Backup Strategy**: All update scripts create timestamped backups
-- **Version Management**: Supports any n8n version available on Docker Hub
+- **Version Management**: Supports any version available on Docker Hub
 
 ### SSL/TLS Configuration
 - **Certificate Provider**: Let's Encrypt via ACME protocol
 - **Challenge Type**: TLS-ALPN-01 (port 443)
 - **Storage**: `/certs/acme.json` in traefik_certs volume
 - **Renewal**: Automatic via Traefik
-- **Domains**: All configured subdomains get individual certificates
+- **Domains**: All configured subdomains get individual certificates (fluxos, webhook, evo, traefik)
+
+### Evolution API Integration
+- **Version**: v2.3.6 (evoapicloud/evolution-api)
+- **Database**: Dedicated PostgreSQL database (`{DATABASE}_evolution`) - auto-created on first run
+- **Cache**: Redis database index 6 (shared with n8n)
+- **Authentication**: API Key auto-generated during installation
+- **Storage**: Dedicated volume for WhatsApp instances and media
+- **Features**: WhatsApp Multi-Device, Chatwoot integration, OpenAI support
+- **Documentation**: https://doc.evolution-api.com/
+- **Integration**: Can be connected to n8n workflows via HTTP Request node
+- **Note**: Evolution API automatically creates its database on first startup
