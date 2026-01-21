@@ -7,51 +7,69 @@
 
 set -e
 
+# Flag para controlar se instalação foi concluída
+INSTALLATION_COMPLETED=false
+
 # Função que SEMPRE executa no final
 show_final_info() {
+    # Só mostra se a instalação foi concluída
+    if [[ "$INSTALLATION_COMPLETED" != "true" ]]; then
+        return 0
+    fi
+
     local domain="$1"
-    local server_ip="$2" 
+    local server_ip="$2"
     local admin_email="$3"
     local admin_password="$4"
     local pgadmin_password="$5"
     local traefik_password="$6"
     local db_password="$7"
-    
+
     echo ""
     echo "╔══════════════════════════════════════════╗"
     echo "║           INFORMAÇÕES FINAIS             ║"
     echo "╚══════════════════════════════════════════╝"
     echo ""
-    echo "🌐 URLs DOS SERVIÇOS:"
+    echo "🌐 === URLS DOS SERVIÇOS ==="
     echo "   n8n Editor: https://fluxos.$domain"
     echo "   n8n Webhook: https://webhook.$domain"
     echo "   Evolution API: https://evo.$domain"
+    echo "   Chatwoot Admin: https://chat.$domain"
+    echo "   Chatwoot API: https://chat-api.$domain"
     echo "   Stirling-PDF: https://stir.$domain"
     echo "   pgAdmin: http://$server_ip:4040"
     echo "   Portainer: https://$server_ip:9443"
     echo "   Traefik: https://traefik.$domain"
     echo ""
-    echo "🔑 CREDENCIAIS:"
+    echo "🔑 === CREDENCIAIS DE ACESSO ==="
     echo "   n8n: $admin_email / $admin_password"
     echo "   Evolution API Key: ${EVOLUTION_API_KEY}"
+    echo "   Chatwoot: Criar conta no primeiro acesso"
     echo "   Stirling-PDF: ${STIRLING_ADMIN_USERNAME} / ${STIRLING_ADMIN_PASSWORD}"
     echo "   pgAdmin: $admin_email / $pgadmin_password"
     echo "   Traefik: admin / $traefik_password"
     echo "   PostgreSQL: postgres / $db_password"
     echo ""
-    echo "🚨 URGENTE: PORTAINER (5 MINUTOS!)"
-    echo "   https://$server_ip:9443"
+    echo "🚨 === URGENTE: PORTAINER (5 MINUTOS!) ==="
+    echo "   URL: https://$server_ip:9443"
     echo "   ⏰ Acesse AGORA para definir senha admin!"
+    echo "   🚨 Após 5 min sem acesso, será necessário resetar!"
     echo ""
-    echo "📋 PRÓXIMOS PASSOS:"
-    echo "1. Acesse Portainer: https://$server_ip:9443"
-    echo "2. Configure DNS: fluxos.$domain → $server_ip"
-    echo "3. Configure DNS: webhook.$domain → $server_ip"
-    echo "4. Configure DNS: evo.$domain → $server_ip"
-    echo "5. Configure DNS: stir.$domain → $server_ip"
-    echo "6. Acesse n8n: https://fluxos.$domain"
+    echo "📋 === PRÓXIMOS PASSOS ==="
+    echo "1. ✅ DNS já configurado (você confirmou antes da instalação)"
+    echo "2. 🔒 Acesse Portainer: https://$server_ip:9443"
+    echo "3. ⏰ Aguarde ~2 minutos para serviços iniciarem"
+    echo "4. 🚀 Acesse n8n: https://fluxos.$domain"
+    echo "5. 📱 Acesse Evolution: https://evo.$domain"
+    echo "6. 💬 Acesse Chatwoot: https://chat.$domain"
+    echo "7. 📄 Acesse Stirling-PDF: https://stir.$domain"
+    echo ""
+    echo "💡 === SETUP ADICIONAL ==="
+    echo "   Chatwoot requer setup inicial do banco:"
+    echo "   docker exec -it \$(docker ps -q -f name=chatwoot_admin) bundle exec rails db:chatwoot_prepare"
     echo ""
     print_error "📸 SALVE ESTE PRINT EM LOCAL SEGURO!"
+    print_error "💾 Credenciais salvas em: .env"
     echo ""
 }
 
@@ -66,7 +84,8 @@ NC='\033[0m'
 
 # Função para imprimir com cor
 print_success() { echo -e "${GREEN}✓ $1${NC}"; }
-print_error() { echo -e "${RED}✗ $1${NC}"; exit 1; }
+print_error() { echo -e "${RED}✗ $1${NC}"; }
+print_error_exit() { echo -e "${RED}✗ $1${NC}"; exit 1; }
 print_info() { echo -e "${YELLOW}→ $1${NC}"; }
 
 # Banner
@@ -80,12 +99,12 @@ echo ""
 
 # Verificar se é root
 if [[ $EUID -ne 0 ]]; then
-   print_error "Execute como root: sudo ./install-simple.sh"
+   print_error_exit "Execute como root: sudo ./install-simple.sh"
 fi
 
 # Verificar sistema
 if [[ ! -f /etc/debian_version ]]; then
-    print_error "Sistema não suportado. Use Debian/Ubuntu."
+    print_error_exit "Sistema não suportado. Use Debian/Ubuntu."
 fi
 
 # Obter IP do servidor
@@ -247,8 +266,8 @@ print_error "⚠️  Certificados SSL falharão se DNS estiver incorreto!"
 echo ""
 read -p "Confirmou que configurou TODOS os registros DNS? (y/N): " DNS_CONFIRMED
 if [[ ! "$DNS_CONFIRMED" =~ ^[Yy]$ ]]; then
-    print_error "Instalação cancelada. Configure o DNS e execute novamente."
-    exit 1
+    echo ""
+    print_error_exit "Instalação cancelada. Configure o DNS e execute novamente."
 fi
 echo ""
 print_success "✓ DNS confirmado pelo usuário"
@@ -613,165 +632,20 @@ docker service scale portainer_portainer=1 >/dev/null 2>&1
 sleep 5
 print_success "Portainer resetado - você tem 5 minutos para acessar!"
 
-# Resultado final
+# Marcar instalação como concluída
+INSTALLATION_COMPLETED=true
+
+# Instalação concluída - as informações finais serão mostradas pelo trap EXIT
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║         INSTALAÇÃO CONCLUÍDA!            ║"
 echo "║         Versão FINAL v5 - 2025           ║"
-echo "║         100% Automática + Evolution      ║"
+echo "║      Stack Completa Instalada! 🎉        ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
-
-# # Debug: Verificar se chegou até aqui
-# echo "DEBUG: Chegou ao resultado final - vars definidas:"
-# echo "SERVER_IP: $SERVER_IP"
-# echo "DOMAIN: $DOMAIN"
-# echo "AUTO_DEPLOYED: $AUTO_DEPLOYED"
-# echo ""
-
-echo "🚨 ⚠️  ATENÇÃO MUITO IMPORTANTE! ⚠️  🚨"
+print_success "Todas as aplicações foram instaladas com sucesso!"
 echo ""
-print_error "📸 TIRE UM PRINT/SCREENSHOT DESTA TELA AGORA!"
-print_error "💾 SALVE AS CREDENCIAIS EM LOCAL SEGURO!"
-print_error "🔐 VOCÊ PRECISARÁ DESSAS SENHAS NO FUTURO!"
+print_info "⏰ Aguarde ~2 minutos para os serviços inicializarem completamente"
+print_info "📊 Use 'docker service ls' para verificar o status dos serviços"
+print_info "🔍 Use './debug.sh' para diagnóstico completo"
 echo ""
-
-# FORÇA EXIBIÇÃO DAS INFORMAÇÕES CRÍTICAS
-echo "🌐 === URLS DOS SERVIÇOS ==="
-echo "   n8n Editor: https://fluxos.$DOMAIN"
-echo "   n8n Webhook: https://webhook.$DOMAIN"
-echo "   Evolution API: https://evo.$DOMAIN"
-echo "   Stirling-PDF: https://stir.$DOMAIN"
-echo "   Chatwoot Admin: https://chat.$DOMAIN"
-echo "   Chatwoot API: https://chat-api.$DOMAIN"
-echo "   pgAdmin: http://$SERVER_IP:4040"
-echo "   Portainer: https://$SERVER_IP:9443"
-echo "   Traefik Dashboard: https://traefik.$DOMAIN"
-echo ""
-
-echo "🔑 === CREDENCIAIS DE ACESSO ==="
-echo "   n8n: $INITIAL_ADMIN_EMAIL / $INITIAL_ADMIN_PASSWORD"
-echo "   Evolution API Key: $EVOLUTION_API_KEY"
-echo "   Stirling-PDF: $STIRLING_ADMIN_USERNAME / $STIRLING_ADMIN_PASSWORD"
-echo "   Chatwoot: Criar conta no primeiro acesso em https://chat.$DOMAIN"
-echo "   pgAdmin: $INITIAL_ADMIN_EMAIL / $PGADMIN_ADMIN_PASSWORD"
-echo "   Traefik: admin / $TRAEFIK_ADMIN_PASSWORD"
-echo "   PostgreSQL: postgres / $DB_PASSWORD"
-echo ""
-
-echo "🚨 === URGENTE: PORTAINER ==="
-echo "   URL: https://$SERVER_IP:9443"
-echo "   ⏰ IMPORTANTE: Você tem apenas 5 MINUTOS para acessar!"
-echo "   🚨 Após 5 min sem acesso, o Portainer bloqueia a configuração!"
-echo "   ✅ O Portainer foi resetado agora - contador zerado!"
-echo ""
-
-echo "📋 === PRÓXIMOS PASSOS ==="
-echo "1️⃣ ACESSE O PORTAINER AGORA: https://$SERVER_IP:9443"
-echo "2️⃣ CONFIGURE DNS: fluxos.$DOMAIN → $SERVER_IP"
-echo "3️⃣ CONFIGURE DNS: webhook.$DOMAIN → $SERVER_IP"
-echo "4️⃣ CONFIGURE DNS: evo.$DOMAIN → $SERVER_IP"
-echo "5️⃣ CONFIGURE DNS: stir.$DOMAIN → $SERVER_IP"
-echo "6️⃣ CONFIGURE DNS: chat.$DOMAIN → $SERVER_IP"
-echo "7️⃣ CONFIGURE DNS: chat-api.$DOMAIN → $SERVER_IP"
-echo "8️⃣ AGUARDE 2 MIN e acesse: https://fluxos.$DOMAIN"
-echo ""
-
-# Email section removida para evitar travamentos
-EMAIL_SENT=false
-echo "DEBUG: Email section bypassed"
-
-# Sempre mostrar as informações importantes independente do deploy
-echo "🌐 URLs DOS SERVIÇOS:"
-echo "   n8n Editor: https://fluxos.$DOMAIN"
-echo "   n8n Webhook: https://webhook.$DOMAIN"
-echo "   Evolution API: https://evo.$DOMAIN"
-echo "   Stirling-PDF: https://stir.$DOMAIN"
-echo "   Chatwoot Admin: https://chat.$DOMAIN"
-echo "   Chatwoot API: https://chat-api.$DOMAIN"
-echo "   pgAdmin: http://$SERVER_IP:4040"
-echo "   Portainer: https://$SERVER_IP:9443"
-echo "   Traefik Dashboard: https://traefik.$DOMAIN"
-echo ""
-
-echo "🔑 CREDENCIAIS DE ACESSO:"
-echo "   n8n: $INITIAL_ADMIN_EMAIL / $INITIAL_ADMIN_PASSWORD"
-echo "   Evolution API Key: $EVOLUTION_API_KEY"
-echo "   Stirling-PDF: $STIRLING_ADMIN_USERNAME / $STIRLING_ADMIN_PASSWORD"
-echo "   Chatwoot: Criar conta no primeiro acesso em https://chat.$DOMAIN"
-echo "   pgAdmin: $INITIAL_ADMIN_EMAIL / $PGADMIN_ADMIN_PASSWORD"
-echo "   Traefik: admin / $TRAEFIK_ADMIN_PASSWORD"
-echo ""
-
-echo "🚀 PRÓXIMOS PASSOS:"
-echo ""
-echo "1️⃣ ACESSE O PORTAINER AGORA (URGENTE!):"
-echo "   https://$SERVER_IP:9443"
-echo "   ⏰ Você tem 5 MINUTOS para definir senha!"
-echo "   🚨 Após 5 min, será necessário redeployar!"
-echo "   ✅ Portainer resetado - contador iniciado AGORA!"
-echo ""
-
-echo "✅ APLICAÇÕES INSTALADAS AUTOMATICAMENTE:"
-echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin + Evolution API + Stirling-PDF"
-echo ""
-echo "2️⃣ CONFIGURE O DNS:"
-echo "   fluxos.$DOMAIN → $SERVER_IP"
-echo "   webhook.$DOMAIN → $SERVER_IP"
-echo "   evo.$DOMAIN → $SERVER_IP"
-echo "   stir.$DOMAIN → $SERVER_IP"
-echo "   traefik.$DOMAIN → $SERVER_IP (opcional)"
-echo ""
-echo "3️⃣ AGUARDE ~2 MINUTOS e acesse:"
-echo "   https://fluxos.$DOMAIN"
-echo ""
-echo "4️⃣ MONITORE NO PORTAINER:"
-echo "   Verifique se todos os serviços estão rodando"
-echo "   Acompanhe logs e status dos containers"
-
-echo ""
-echo "🔑 ⚠️  CREDENCIAIS CRÍTICAS - SALVE ESTA INFORMAÇÃO! ⚠️"
-echo "📄 Arquivo .env criado com todas as credenciais"
-echo ""
-echo "🗂️  RESUMO DE TODAS AS SENHAS:"
-echo "   PostgreSQL: postgres / $DB_PASSWORD"
-echo "   Banco: $DATABASE"
-echo "   Traefik Dashboard: admin / $TRAEFIK_ADMIN_PASSWORD"
-echo "   pgAdmin: $INITIAL_ADMIN_EMAIL / $PGADMIN_ADMIN_PASSWORD"
-echo ""
-print_error "📸 TIRE UM PRINT DESTA TELA ANTES DE CONTINUAR!"
-print_error "💾 GUARDE AS SENHAS EM GERENCIADOR DE SENHAS!"
-
-if [[ "$EMAIL_SENT" == "true" ]]; then
-    echo ""
-    echo "📧 Credenciais também enviadas por email para: $CREDENTIALS_EMAIL"
-fi
-echo ""
-echo "📊 Comandos úteis:"
-echo "   docker stack ls              # Ver stacks"
-echo "   docker service ls            # Ver serviços"
-echo "   docker-ctop                  # Monitor"
-echo "   docker service logs <nome>   # Ver logs"
-echo "   ./debug.sh                   # Diagnóstico completo"
-echo ""
-echo "🚨 LEMBRETE FINAL:"
-print_error "📸 VOCÊ TIROU O PRINT DAS CREDENCIAIS?"
-print_error "💾 VOCÊ SALVOU AS SENHAS EM LOCAL SEGURO?"
-echo ""
-echo "✅ === INSTALAÇÃO FINALIZADA ==="
-echo "📅 Data: $(date)"
-echo "🔧 Script versão: 2025.07.17-v3"
-echo ""
-echo "⏰ AGUARDE ~2 MINUTOS antes de acessar os serviços"
-echo "🔄 Os containers precisam de tempo para inicializar"
-echo ""
-echo "🎯 RESUMO FINAL:"
-echo "   • Portainer: https://$SERVER_IP:9443 (5 min para configurar!)"
-echo "   • n8n: https://fluxos.$DOMAIN (após configurar DNS)"
-echo "   • Evolution API: https://evo.$DOMAIN (após configurar DNS)"
-echo "   • Stirling-PDF: https://stir.$DOMAIN (após configurar DNS)"
-echo "   • pgAdmin: http://$SERVER_IP:4040"
-echo ""
-print_error "📸 NÃO ESQUEÇA DE SALVAR ESTE PRINT!"
-echo ""
-echo "DEBUG: Script finalizado com sucesso! ✅"
