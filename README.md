@@ -51,6 +51,7 @@ Aponte os domínios para o IP do seu servidor:
 ```
 fluxos.SEU-DOMINIO.com   → IP_DO_SERVIDOR
 webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
+evo.SEU-DOMINIO.com      → IP_DO_SERVIDOR
 traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
 ```
 
@@ -64,6 +65,13 @@ traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
 - **Editor**: https://fluxos.SEU-DOMINIO.com
 - **Webhook**: https://webhook.SEU-DOMINIO.com
 - **Credenciais**: Mostradas no final da instalação (salvas em `.env`)
+
+### Evolution API (WhatsApp Multi-Device)
+- **URL**: https://evo.SEU-DOMINIO.com
+- **API Key**: Mostrada no final da instalação (salva em `.env`)
+- **Função**: API para gerenciar instâncias WhatsApp Multi-Device
+- **Versão**: v2.3.6
+- **Documentação**: https://doc.evolution-api.com/
 
 ### Portainer (Monitoramento Docker)
 - **URL**: https://IP_DO_SERVIDOR:9443
@@ -134,6 +142,16 @@ sudo ./update-n8n.sh
 - Interface interativa com seleção por menu
 - Backup automático dos arquivos YAML
 - Deploy sequencial otimizado (Editor → Webhook → Worker)
+- Validação de imagens antes da atualização
+
+### Atualização do Evolution API
+```bash
+sudo ./update-evolution.sh
+```
+- Atualiza Evolution API para qualquer versão disponível
+- Busca versões automaticamente no Docker Hub
+- Interface interativa com seleção por menu
+- Backup automático do arquivo YAML
 - Validação de imagens antes da atualização
 
 ### Configuração SSL/TLS
@@ -322,6 +340,7 @@ sudo ./install-simple.sh
 ```
 fluxos.SEU-DOMINIO.com   → IP_DO_SERVIDOR
 webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
+evo.SEU-DOMINIO.com      → IP_DO_SERVIDOR
 traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
 ```
 
@@ -361,6 +380,14 @@ sudo ./update-n8n.sh
 - Backup automático antes da atualização
 - Deploy otimizado com delays apropriados
 
+### Atualizar Evolution API para Nova Versão
+```bash
+sudo ./update-evolution.sh
+```
+- Interface interativa para selecionar versões
+- Busca automática de versões no Docker Hub
+- Backup automático antes da atualização
+
 ### Configurar SSL/TLS
 ```bash
 sudo ./update-ssl.sh
@@ -385,10 +412,11 @@ Tudo funciona automaticamente com SSL via Traefik e modo queue para alta perform
 
 ### 🚀 Principais Recursos:
 - ✅ **Docker Swarm** - Orquestração robusta
-- ✅ **n8n Queue Mode** - Editor + Webhook + Worker  
+- ✅ **n8n Queue Mode** - Editor + Webhook + Worker
 - ✅ **PostgreSQL 16** - Banco de dados principal
 - ✅ **Redis 7** - Cache e filas de trabalho
 - ✅ **Traefik v3** - Proxy reverso com SSL automático
+- ✅ **Evolution API v2.3.6** - WhatsApp Multi-Device API
 - ✅ **Portainer** - Interface de gerenciamento
 - ✅ **pgAdmin 4** - Administração PostgreSQL
 - ✅ **Let's Encrypt** - Certificados SSL gratuitos
