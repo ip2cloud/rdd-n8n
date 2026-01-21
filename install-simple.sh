@@ -37,8 +37,9 @@ show_final_info() {
     echo "   Traefik: admin / $traefik_password"
     echo "   PostgreSQL: postgres / $db_password"
     echo ""
-    echo "🚨 URGENTE: PORTAINER (10 MINUTOS!)"
+    echo "🚨 URGENTE: PORTAINER (5 MINUTOS!)"
     echo "   https://$server_ip:9443"
+    echo "   ⏰ Acesse AGORA para definir senha admin!"
     echo ""
     echo "📋 PRÓXIMOS PASSOS:"
     echo "1. Acesse Portainer: https://$server_ip:9443"
@@ -440,6 +441,14 @@ if ! command -v docker-ctop >/dev/null 2>&1; then
     print_success "ctop instalado"
 fi
 
+# 10. Resetar timeout do Portainer (fix: timeout de 5 minutos)
+print_info "Resetando Portainer para garantir 5 minutos de acesso..."
+docker service scale portainer_portainer=0 >/dev/null 2>&1
+sleep 3
+docker service scale portainer_portainer=1 >/dev/null 2>&1
+sleep 5
+print_success "Portainer resetado - você tem 5 minutos para acessar!"
+
 # Resultado final
 echo ""
 echo "╔══════════════════════════════════════════╗"
@@ -483,8 +492,9 @@ echo ""
 
 echo "🚨 === URGENTE: PORTAINER ==="
 echo "   URL: https://$SERVER_IP:9443"
-echo "   ⏰ IMPORTANTE: Você tem apenas 10 MINUTOS para acessar!"
-echo "   🚨 Após 10 min sem acesso, o Portainer bloqueia a configuração!"
+echo "   ⏰ IMPORTANTE: Você tem apenas 5 MINUTOS para acessar!"
+echo "   🚨 Após 5 min sem acesso, o Portainer bloqueia a configuração!"
+echo "   ✅ O Portainer foi resetado agora - contador zerado!"
 echo ""
 
 echo "📋 === PRÓXIMOS PASSOS ==="
@@ -520,8 +530,9 @@ echo "🚀 PRÓXIMOS PASSOS:"
 echo ""
 echo "1️⃣ ACESSE O PORTAINER AGORA (URGENTE!):"
 echo "   https://$SERVER_IP:9443"
-echo "   ⏰ Você tem 10 MINUTOS para definir senha!"
-echo "   🚨 Após 10 min, será necessário redeployar!"
+echo "   ⏰ Você tem 5 MINUTOS para definir senha!"
+echo "   🚨 Após 5 min, será necessário redeployar!"
+echo "   ✅ Portainer resetado - contador iniciado AGORA!"
 echo ""
 
 echo "DEBUG: Verificando AUTO_DEPLOYED: $AUTO_DEPLOYED"
@@ -593,7 +604,7 @@ echo "⏰ AGUARDE ~2 MINUTOS antes de acessar os serviços"
 echo "🔄 Os containers precisam de tempo para inicializar"
 echo ""
 echo "🎯 RESUMO FINAL:"
-echo "   • Portainer: https://$SERVER_IP:9443 (10 min para configurar!)"
+echo "   • Portainer: https://$SERVER_IP:9443 (5 min para configurar!)"
 echo "   • n8n: https://fluxos.$DOMAIN (após configurar DNS)"
 echo "   • Evolution API: https://evo.$DOMAIN (após configurar DNS)"
 echo "   • pgAdmin: http://$SERVER_IP:4040"

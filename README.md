@@ -75,8 +75,9 @@ traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
 
 ### Portainer (Monitoramento Docker)
 - **URL**: https://IP_DO_SERVIDOR:9443
-- **Primeiro acesso**: Defina senha do admin
+- **Primeiro acesso**: Defina senha do admin (5 minutos após instalação)
 - **Função**: Monitorar containers e serviços
+- **Importante**: O script reseta o Portainer no final para garantir 5 minutos limpos
 
 ### Traefik (Dashboard do Proxy)
 - **URL**: https://traefik.SEU-DOMINIO.com
@@ -297,6 +298,11 @@ docker service logs n8n_editor_n8n
 # Verificar se está rodando
 docker service ls | grep portainer
 
+# Resetar timeout (5 minutos novos)
+docker service scale portainer_portainer=0
+sleep 3
+docker service scale portainer_portainer=1
+
 # Reinstalar se necessário
 docker stack deploy -c portainer/portainer.yaml portainer
 ```
@@ -358,10 +364,11 @@ Os serviços precisam de um tempo para inicializar completamente.
 - URL: https://fluxos.SEU-DOMINIO.com
 - Use as credenciais mostradas no final da instalação
 
-### 5️⃣ Monitore no Portainer (opcional)
+### 5️⃣ Monitore no Portainer (URGENTE!)
 - URL: https://IP_DO_SERVIDOR:9443
 - Crie senha do admin no primeiro acesso
-- ⚠️ **IMPORTANTE**: Acesse em até 10 minutos após instalação
+- ⚠️ **IMPORTANTE**: Acesse em até 5 minutos após instalação
+- ✅ O script reseta o Portainer no final - você tem 5 minutos limpos
 
 ### 6️⃣ Acesse pgAdmin (se necessário)
 - URL: http://IP_DO_SERVIDOR:4040

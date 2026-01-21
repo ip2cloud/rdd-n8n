@@ -127,8 +127,11 @@ sudo chmod 600 /etc/n8n-installer/smtp.conf
 2. Answer 5-6 simple questions
 3. Choose automatic deployment (default: Yes)
 4. Wait ~5 minutes for complete setup
-5. Access n8n at `https://fluxos.DOMAIN`
-6. Access Evolution API at `https://evo.DOMAIN`
+5. **IMPORTANT**: Access Portainer immediately (5-minute window to set admin password)
+6. Access n8n at `https://fluxos.DOMAIN`
+7. Access Evolution API at `https://evo.DOMAIN`
+
+**Note**: The script automatically resets Portainer at the end to provide a fresh 5-minute window for initial setup.
 
 ### Manual Deployment (Alternative)
 1. Choose manual deployment during installation
@@ -273,6 +276,18 @@ sudo ./install-simple.sh  # Just run installer again
 - **Authentication**: Uses same email as n8n admin + auto-generated password
 - **Security**: No SSL termination (internal network access recommended)
 - **Database connection**: Automatically configured for local PostgreSQL
+
+### Portainer Timeout Fix
+- **Problem**: Portainer has 5-minute timeout for initial admin setup
+- **Solution**: Script automatically resets Portainer at the end using Docker Swarm scaling (0→1)
+  ```bash
+  docker service scale portainer_portainer=0  # Stop service
+  sleep 3
+  docker service scale portainer_portainer=1  # Restart service
+  ```
+- **Result**: User gets fresh 5-minute window after installation completes
+- **Benefit**: Can monitor installation AND have time to configure admin password
+- **Why scaling**: More elegant than `--force`, ensures complete container recreation
 
 ### Update System Notes
 - **update-n8n.sh**: Interactive version selector with Docker Hub integration
