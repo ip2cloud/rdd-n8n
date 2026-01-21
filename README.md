@@ -4,8 +4,10 @@
 
 ### 🎯 O que é instalado automaticamente:
 - Docker Swarm + Portainer + Traefik (SSL automático)
-- PostgreSQL 16 + Redis 7 
+- PostgreSQL 16 + Redis 7
 - n8n completo (editor + webhook + worker) em modo queue
+- Evolution API (WhatsApp Multi-Device) + Chatwoot v4 (atendimento omnichannel)
+- Stirling-PDF (manipulação de PDFs)
 - Todas as redes, volumes e configurações necessárias
 
 ---
@@ -37,24 +39,57 @@ sudo ./setup-smtp.sh
 
 > 💡 **Recomendado**: Tecle ENTER em tudo para usar os padrões
 
-### 4️⃣ Aguarde ~5 minutos e pronto!
+### 4️⃣ Configure o DNS quando solicitado:
 
-✅ **Tudo instalado automaticamente sem perguntas adicionais!**
+⚠️ **IMPORTANTE**: O script irá pausar e solicitar que você configure o DNS **ANTES** de iniciar a instalação.
+
+O script mostrará todas as entradas DNS necessárias:
+```
+fluxos.exemplo.com    → IP_DO_SERVIDOR
+webhook.exemplo.com   → IP_DO_SERVIDOR
+evo.exemplo.com       → IP_DO_SERVIDOR
+stir.exemplo.com      → IP_DO_SERVIDOR
+chat.exemplo.com      → IP_DO_SERVIDOR
+chat-api.exemplo.com  → IP_DO_SERVIDOR
+```
+
+- Configure essas entradas no seu provedor DNS (Cloudflare, GoDaddy, etc.)
+- Aguarde 1-5 minutos para propagação
+- Confirme no script quando estiver pronto
+
+> 💡 **Por que isso é importante?** O Traefik precisa do DNS correto para gerar os certificados SSL. Se o DNS não estiver configurado, os certificados falharão.
+
+### 5️⃣ Aguarde ~5 minutos e pronto!
+
+✅ **Tudo instalado automaticamente após configurar o DNS!**
 
 ---
 
 ## 🌐 Configure o DNS (Obrigatório)
 
+⚠️ **ATENÇÃO**: O script de instalação irá **pausar automaticamente** e solicitar que você configure o DNS antes de prosseguir. Isso garante que os certificados SSL sejam gerados corretamente.
+
 Aponte os domínios para o IP do seu servidor:
 
 ```
-fluxos.SEU-DOMINIO.com   → IP_DO_SERVIDOR
-webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
-evo.SEU-DOMINIO.com      → IP_DO_SERVIDOR
-traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
+fluxos.SEU-DOMINIO.com    → IP_DO_SERVIDOR
+webhook.SEU-DOMINIO.com   → IP_DO_SERVIDOR
+evo.SEU-DOMINIO.com       → IP_DO_SERVIDOR
+stir.SEU-DOMINIO.com      → IP_DO_SERVIDOR
+chat.SEU-DOMINIO.com      → IP_DO_SERVIDOR
+chat-api.SEU-DOMINIO.com  → IP_DO_SERVIDOR
+traefik.SEU-DOMINIO.com   → IP_DO_SERVIDOR (opcional)
 ```
 
 **Nota**: pgAdmin não precisa de DNS, acesso direto via IP:4040
+
+**Testando DNS**: Verifique se o DNS está resolvendo corretamente antes de confirmar:
+```bash
+nslookup fluxos.SEU-DOMINIO.com
+ping fluxos.SEU-DOMINIO.com
+```
+
+Se os comandos acima não retornarem o IP do servidor, aguarde mais tempo para propagação DNS (pode levar até 48h em alguns casos, mas geralmente 1-5 minutos).
 
 ---
 
@@ -87,6 +122,27 @@ traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
 - **URL**: http://IP_DO_SERVIDOR:4040
 - **Login**: mesmo email da instalação / senha_gerada_automaticamente
 - **Função**: Interface web para administração do PostgreSQL
+
+### Stirling-PDF (Manipulação de PDFs)
+- **URL**: https://stir.SEU-DOMINIO.com
+- **Login**: admin / senha_gerada_automaticamente
+- **Função**: Suite completa de ferramentas para manipulação de PDFs
+- **Recursos**: Mesclar, dividir, comprimir, converter, OCR, assinar PDFs
+- **Versão**: latest (sempre atualizada)
+- **Documentação**: https://github.com/Stirling-Tools/Stirling-PDF
+
+### Chatwoot (Atendimento Omnichannel)
+- **URL Admin**: https://chat.SEU-DOMINIO.com
+- **URL API**: https://chat-api.SEU-DOMINIO.com
+- **Login**: Criar conta no primeiro acesso (requer setup inicial)
+- **Função**: Plataforma de atendimento ao cliente omnichannel
+- **Recursos**: WhatsApp, Telegram, Email, WebChat, Bot builder, Automações
+- **Versão**: v4.0.2-ce (Community Edition)
+- **Documentação**: https://www.chatwoot.com/docs/self-hosted
+- **Setup Inicial**: Execute após deploy para preparar o banco de dados:
+  ```bash
+  docker exec -it $(docker ps -q -f name=chatwoot_admin) bundle exec rails db:chatwoot_prepare
+  ```
 
 ---
 
@@ -154,6 +210,27 @@ sudo ./update-evolution.sh
 - Backup automático do arquivo YAML
 - Validação de imagens antes da atualização
 
+### Atualização do Stirling-PDF
+```bash
+sudo ./update-stirling.sh
+```
+- Atualiza Stirling-PDF para qualquer versão disponível
+- Busca versões automaticamente no Docker Hub
+- Interface interativa com seleção por menu
+- Backup automático do arquivo YAML
+- Validação de imagens antes da atualização
+
+### Atualização do Chatwoot
+```bash
+sudo ./update-chatwoot.sh
+```
+- Atualiza Chatwoot para qualquer versão disponível (Community Edition)
+- Busca versões automaticamente no Docker Hub
+- Interface interativa com seleção por menu
+- Backup automático do arquivo YAML
+- Validação de imagens antes da atualização
+- Atualiza os 3 serviços (admin + api + sidekiq)
+
 ### Configuração SSL/TLS
 ```bash
 sudo ./update-ssl.sh
@@ -216,6 +293,15 @@ sudo ./uninstall.sh
 - Verifica se o banco já existe antes de criar
 - Útil se Evolution API apresentar erro "database does not exist"
 
+### Criação Manual do Banco Chatwoot (se necessário)
+```bash
+./create-chatwoot-database.sh
+```
+- Cria o banco do Chatwoot manualmente
+- Verifica se o banco já existe antes de criar
+- Útil se Chatwoot apresentar erro "database does not exist"
+- Fornece comandos para executar o setup inicial
+
 ---
 
 ## 🔧 Variáveis de Ambiente
@@ -236,6 +322,18 @@ PGADMIN_ADMIN_PASSWORD=senha_gerada_automaticamente
 EVOLUTION_API_KEY=chave_gerada_automaticamente
 EVOLUTION_DATABASE=bravo_evolution
 EVOLUTION_URL=https://evo.seu-dominio.com
+STIRLING_ADMIN_USERNAME=admin
+STIRLING_ADMIN_PASSWORD=senha_gerada_automaticamente
+CHATWOOT_SECRET_KEY_BASE=chave_gerada_automaticamente_128_chars
+CHATWOOT_DATABASE=chatwoot
+CHATWOOT_FRONTEND_URL=https://chat.seu-dominio.com
+CHATWOOT_API_URL=https://chat-api.seu-dominio.com
+CHATWOOT_STORAGE_SERVICE=local
+CHATWOOT_MAILER_SENDER_EMAIL=Chatwoot <noreply@seu-dominio.com>
+CHATWOOT_SMTP_ADDRESS=smtp_opcional
+CHATWOOT_SMTP_DOMAIN=seu-dominio.com
+CHATWOOT_SMTP_USERNAME=smtp_opcional
+CHATWOOT_SMTP_PASSWORD=smtp_opcional
 EDITOR_URL=https://fluxos.seu-dominio.com
 WEBHOOK_URL=https://webhook.seu-dominio.com
 ```
@@ -297,7 +395,28 @@ docker service logs n8n_editor_n8n
 
 # Criar banco Evolution API manualmente
 ./create-evolution-database.sh
+
+# Criar banco Chatwoot manualmente
+./create-chatwoot-database.sh
 ```
+
+### Certificados SSL não foram gerados?
+1. ✅ Verifique se o DNS está configurado corretamente:
+   ```bash
+   nslookup fluxos.SEU-DOMINIO.com
+   ```
+2. ✅ Verifique se o DNS aponta para o IP correto do servidor
+3. ✅ Aguarde 1-5 minutos para propagação DNS
+4. ✅ Verifique logs do Traefik:
+   ```bash
+   docker service logs traefik_traefik
+   ```
+5. ✅ Se necessário, redeploy do Traefik:
+   ```bash
+   docker stack deploy -c traefik/traefik.yaml traefik
+   ```
+
+**Nota**: O Traefik precisa que o DNS esteja resolvendo corretamente ANTES de tentar gerar certificados. Se você não configurou o DNS quando o script solicitou, configure agora e redeploy o Traefik.
 
 ### Portainer não acessa?
 ```bash
@@ -333,6 +452,14 @@ sudo ./uninstall.sh
 sudo ./install-simple.sh
 ```
 
+### Cancelei a instalação na etapa do DNS
+**Sem problema!** Você pode executar o script novamente quando quiser:
+```bash
+sudo ./install-simple.sh
+```
+
+O script irá recomeçar do início. Não há problema em cancelar e reiniciar.
+
 ---
 
 ## 🔧 Requisitos do Sistema
@@ -350,10 +477,13 @@ sudo ./install-simple.sh
 
 ### 1️⃣ Configure o DNS
 ```
-fluxos.SEU-DOMINIO.com   → IP_DO_SERVIDOR
-webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
-evo.SEU-DOMINIO.com      → IP_DO_SERVIDOR
-traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
+fluxos.SEU-DOMINIO.com    → IP_DO_SERVIDOR
+webhook.SEU-DOMINIO.com   → IP_DO_SERVIDOR
+evo.SEU-DOMINIO.com       → IP_DO_SERVIDOR
+stir.SEU-DOMINIO.com      → IP_DO_SERVIDOR
+chat.SEU-DOMINIO.com      → IP_DO_SERVIDOR
+chat-api.SEU-DOMINIO.com  → IP_DO_SERVIDOR
+traefik.SEU-DOMINIO.com   → IP_DO_SERVIDOR (opcional)
 ```
 
 ### 2️⃣ Configure SSL (Recomendado)
@@ -430,6 +560,8 @@ Tudo funciona automaticamente com SSL via Traefik e modo queue para alta perform
 - ✅ **Redis 7** - Cache e filas de trabalho
 - ✅ **Traefik v3** - Proxy reverso com SSL automático
 - ✅ **Evolution API v2.3.6** - WhatsApp Multi-Device API
+- ✅ **Chatwoot v4.0.2** - Plataforma de atendimento omnichannel
+- ✅ **Stirling-PDF** - Suite completa de manipulação de PDFs
 - ✅ **Portainer** - Interface de gerenciamento
 - ✅ **pgAdmin 4** - Administração PostgreSQL
 - ✅ **Let's Encrypt** - Certificados SSL gratuitos

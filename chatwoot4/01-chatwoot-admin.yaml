@@ -1,0 +1,186 @@
+version: "3.7"
+
+##############
+#
+# Para configurar o chatwoot, execute o comando abaixo no console do container:
+#
+# bundle exec rails db:chatwoot_prepare
+#
+# Variáveis de Ambiente:
+#
+# https://www.chatwoot.com/docs/self-hosted/configuration/environment-variables
+#
+# Valores Padrão:
+# https://github.com/chatwoot/chatwoot/blob/develop/.env.example
+#
+#############
+
+# Definição dos Serviços
+services:
+  # Definição do Nome do Serviço da Interface Web
+  chatwoot_admin:
+    # imagem oficial do chatwoot
+    # https://hub.docker.com/r/chatwoot/chatwoot/tags
+    image: chatwoot/chatwoot:v4.0.2-ce
+    # Define o hotname do container
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    # comando padrão para subir o servidor web
+    command: bundle exec rails s -p 3000 -b 0.0.0.0
+    # entrypoint para configurar o aplicativo
+    entrypoint: docker/entrypoints/rails.sh
+    # configura os volumes do chatwoot
+    volumes:
+    - chatwootv4_data-admin:/app/storage # arquivos do usuário
+    # configura a rede do serviço
+    networks:
+    # Define a nossa rede padrão do swarm
+    - network_swarm_public
+    - network_swarm_databases
+    # Configura as variáveis de ambiente do chatwoot
+    environment:
+    ##########################################
+    # Nome do Setup
+    ##########################################
+    - INSTALLATION_NAME=chatwoot
+    # Ambiente de Execução do Node
+    - NODE_ENV=production
+    # Ambiente de Execução do Rails
+    - RAILS_ENV=production
+    # Tipo de Instalação
+    - INSTALLATION_ENV=docker
+    # Chave de Segurança
+    - SECRET_KEY_BASE=123458bb7ef6402f6a8bcf5d3be54321
+    # URL do Frontend
+    - FRONTEND_URL=https://atendimento.ip2sec.com.br
+    # Configura o idioma padrão
+    # https://www.chatwoot.com/hc/user-guide/articles/1677695546-languages-supported-in-chatwoot
+    - DEFAULT_LOCALE=pt-BR
+    # Configura o SSL
+    - FORCE_SSL=true
+    # Configura a criação de novas contas
+    - ENABLE_ACCOUNT_SIGNUP=false
+    # Configura o Log
+    - RAILS_LOG_TO_STDOUT=true
+    # Configura o Avatar do Bot
+    - USE_INBOX_AVATAR_FOR_BOT=true
+    # Hablitia o Relay Server para Push do Chatwoot Mobile
+    - ENABLE_PUSH_RELAY_SERVER=true
+    ##########################################
+    # Configura o Redis
+    ##########################################
+    # Configura o Redis
+    - REDIS_URL=redis://redis:6379
+    # Se você habilitou a senha do redis
+    # - REDIS_PASSWORD=
+    ##########################################
+    # Configura o Banco de Dados
+    ##########################################
+    # Configura o endereço do Postgres ou PgBouncer
+    - POSTGRES_HOST=postgres-vector_postgres
+    # Configura o Usuário do Postgres
+    - POSTGRES_USERNAME=postgres
+    # Configura a Senha do Postgres
+    - POSTGRES_PASSWORD=lWTgxiVOht0K80mQpdY5pYA
+    # Configura o Banco de Dados do Postgres
+    - POSTGRES_DATABASE=chatwoot1
+    ##########################################
+    # Configurações do Email
+    ##########################################
+    # Endereço de Remetente
+    - MAILER_SENDER_EMAIL=Suporte IP2Sec <suporte@envios.ip2sec.com.br>
+    # Hostname do Provedor SMTP
+    - SMTP_ADDRESS=smtplw.com.br
+    # Tipo de Autenticação
+    - SMTP_AUTHENTICATION=login
+    # Domínio do SMTP
+    - SMTP_DOMAIN=envios.ip2sec.com.br
+    # Habilita o uso de TLS no SMTP
+    - SMTP_ENABLE_STARTTLS_AUTO=true
+    # Configura a porta do SMTP
+    - SMTP_PORT=587
+    # Usuário do SMTP
+    - SMTP_USERNAME=felitur
+    # Senha do SMTP
+    - SMTP_PASSWORD=UVENXipL0000
+    - SMTP_OPENSSL_VERIFY_MODE=peer
+    - MAILER_INBOUND_EMAIL_DOMAIN=suporte@envios.ip2sec.com.br
+    ##########################################
+    # Configura o Object Storage Externo
+    ##########################################
+    # Seleciona o Tipo de Storage
+    - ACTIVE_STORAGE_SERVICE=s3_compatible
+    # Nome do Bucket do Minio
+    - STORAGE_BUCKET_NAME=chatwoot-ip2
+    # Access Key do Minio
+    - STORAGE_ACCESS_KEY_ID=005c97123c8d0090000000005
+    # Secret Key do Minio
+    - STORAGE_SECRET_ACCESS_KEY=K005d3X/zHqm2FAXcbtEJIEyPgnEA8o
+    # Região
+    - STORAGE_REGION=nyc3
+    # Endereço Público do Minio
+    - STORAGE_ENDPOINT=https://s3.us-east-005.backblazeb2.com
+    # Força a usar o caminho na URL (obrigatório pro minio)
+    - STORAGE_FORCE_PATH_STYLE=true
+    ##########################################
+    # Configura o Backend
+    ##########################################
+    # Configuraçoes de Concorrência do Sidekiq
+    - SIDEKIQ_CONCURRENCY=10
+    ##########################################
+    # Configurações de Escalabilidade
+    ##########################################
+    # Configura o Número de Workers do Puma
+    # A conta seria o número de (núcleos da CPU - 1)
+    # o valor 0 ativa somente 1 worker
+    - WEB_CONCURRENCY=0
+    # Configura o Número Máximo de Threads
+    - RAILS_MAX_THREADS=5
+    ##########################################
+    # Configura API Server
+    ##########################################
+    - CW_API_ONLY_SERVER=false
+    # Configura o Modo de Deploy da Aplicação
+    deploy:
+      # Configura o modo de deploy
+      mode: replicated
+      # Configura o numero de replicas
+      replicas: 1
+      placement:
+        constraints:
+        # - node.role == manager
+        - node.hostname == mgr02htz
+      resources:
+        limits:
+          # Define a quantidade de CPU para o CodeChat para evitar travamento do Host
+          cpus: "1"
+          # Define a quantidade de RAM para o CodeChat para evitar travamento do Host
+          memory: 2048M
+      # labels:
+      #   # Configura o Roteamento do Traefik
+      #   - traefik.enable=true # habilita o traefik
+      #   # Configura o Roteamento do Traefik para o Chatwoot
+      #   - traefik.http.routers.chatwoot_admin.rule=Host(`chat4.agenciasynca.com.br`)
+      #   # Define o tipo de entrada para HTTPS
+      #   - traefik.http.routers.chatwoot_admin.entrypoints=websecure
+      #   # Define o certificado
+      #   - traefik.http.routers.chatwoot_admin.tls.certresolver=letsencryptresolver
+      #   # Define o serviço do Chatwoot
+      #   - traefik.http.routers.chatwoot_admin.service=chatwoot_admin
+      #   # Define a porta do Chatwoot
+      #   - traefik.http.services.chatwoot_admin.loadbalancer.server.port=3000
+      #   # Define os Headers do Chatwoot
+      #   - traefik.http.services.chatwoot_admin.loadbalancer.passhostheader=true
+      #   # Configura o Middleware do Traefik para trabalhar com SSL no Websockets
+      #   - traefik.http.middlewares.sslheader.headers.customrequestheaders.X-Forwarded-Proto=https
+      #   - traefik.http.routers.chatwoot_admin.middlewares=sslheader@docker
+volumes:
+  chatwootv4_data-admin:
+    external: true
+    name: chatwootv4_data-admin
+networks:
+  network_swarm_public:
+    external: true
+    name: network_swarm_public
+  network_swarm_databases:
+    external: true
+    name: network_swarm_databases

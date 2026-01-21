@@ -8,7 +8,7 @@ version: "3.7"
 
 services:
   stirling-pdf:
-    image: frooodle/s-pdf:alpha
+    image: frooodle/s-pdf:latest
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
     networks:
     - network_swarm_public
@@ -21,8 +21,8 @@ services:
     - INSTALL_BOOK_AND_ADVANCED_HTML_OPS=false
     - LANGS=pt_BR
     - SECURITY_ENABLE_LOGIN=true
-    - SECURITY_INITIALLOGIN_USERNAME=alfredo
-    - SECURITY_INITIALLOGIN_PASSWORD=sabocinski
+    - SECURITY_INITIALLOGIN_USERNAME=${STIRLING_ADMIN_USERNAME}
+    - SECURITY_INITIALLOGIN_PASSWORD=${STIRLING_ADMIN_PASSWORD}
     deploy:
       mode: replicated
       replicas: 1

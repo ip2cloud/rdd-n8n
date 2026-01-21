@@ -1,0 +1,312 @@
+version: "3.7"
+
+########################################
+#
+# Stack do Chatwoot v4
+# Plataforma de atendimento omnichannel
+#
+# Arquitetura:
+# - chatwoot_admin: Interface web administrativa
+# - chatwoot_api: API para integrações (webhooks, Evolution API, etc)
+# - chatwoot_sidekiq: Background jobs (emails, notificações, etc)
+#
+# Setup inicial (executar após deploy):
+# docker exec -it $(docker ps -q -f name=chatwoot_admin) bundle exec rails db:chatwoot_prepare
+#
+# Documentação:
+# https://www.chatwoot.com/docs/self-hosted
+#
+########################################
+
+services:
+  ##########################################
+  # CHATWOOT ADMIN - Interface Web
+  ##########################################
+  chatwoot_admin:
+    image: chatwoot/chatwoot:v4.0.2-ce
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    command: bundle exec rails s -p 3000 -b 0.0.0.0
+    entrypoint: docker/entrypoints/rails.sh
+
+    volumes:
+    - chatwoot_data_admin:/app/storage
+
+    networks:
+    - network_swarm_public
+    - network_swarm_databases
+
+    environment:
+    ##########################################
+    # Configurações Gerais
+    ##########################################
+    - INSTALLATION_NAME=chatwoot
+    - NODE_ENV=production
+    - RAILS_ENV=production
+    - INSTALLATION_ENV=docker
+    - SECRET_KEY_BASE=${CHATWOOT_SECRET_KEY_BASE}
+    - FRONTEND_URL=${CHATWOOT_FRONTEND_URL}
+    - DEFAULT_LOCALE=pt-BR
+    - FORCE_SSL=true
+    - ENABLE_ACCOUNT_SIGNUP=false
+    - RAILS_LOG_TO_STDOUT=true
+    - USE_INBOX_AVATAR_FOR_BOT=true
+    - ENABLE_PUSH_RELAY_SERVER=true
+
+    ##########################################
+    # Redis
+    ##########################################
+    - REDIS_URL=redis://redis_redis:6379
+
+    ##########################################
+    # PostgreSQL
+    ##########################################
+    - POSTGRES_HOST=postgres_postgres
+    - POSTGRES_USERNAME=postgres
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    - POSTGRES_DATABASE=${CHATWOOT_DATABASE}
+
+    ##########################################
+    # Email (SMTP opcional)
+    ##########################################
+    - MAILER_SENDER_EMAIL=${CHATWOOT_MAILER_SENDER_EMAIL}
+    - SMTP_ADDRESS=${CHATWOOT_SMTP_ADDRESS}
+    - SMTP_AUTHENTICATION=login
+    - SMTP_DOMAIN=${CHATWOOT_SMTP_DOMAIN}
+    - SMTP_ENABLE_STARTTLS_AUTO=true
+    - SMTP_PORT=587
+    - SMTP_USERNAME=${CHATWOOT_SMTP_USERNAME}
+    - SMTP_PASSWORD=${CHATWOOT_SMTP_PASSWORD}
+    - SMTP_OPENSSL_VERIFY_MODE=peer
+    - MAILER_INBOUND_EMAIL_DOMAIN=${CHATWOOT_SMTP_DOMAIN}
+
+    ##########################################
+    # Storage (Local por padrão)
+    ##########################################
+    - ACTIVE_STORAGE_SERVICE=${CHATWOOT_STORAGE_SERVICE}
+
+    ##########################################
+    # Performance
+    ##########################################
+    - SIDEKIQ_CONCURRENCY=10
+    - WEB_CONCURRENCY=0
+    - RAILS_MAX_THREADS=5
+    - CW_API_ONLY_SERVER=false
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+        - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2048M
+      labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chatwoot-admin.rule=Host(`chat.${DOMAIN}`)"
+      - "traefik.http.routers.chatwoot-admin.entrypoints=websecure"
+      - "traefik.http.routers.chatwoot-admin.tls=true"
+      - "traefik.http.routers.chatwoot-admin.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.chatwoot-admin.service=chatwoot-admin"
+      - "traefik.http.services.chatwoot-admin.loadbalancer.server.port=3000"
+      - "traefik.http.services.chatwoot-admin.loadbalancer.passhostheader=true"
+      - "traefik.http.middlewares.chatwoot-sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.chatwoot-admin.middlewares=chatwoot-sslheader"
+
+  ##########################################
+  # CHATWOOT API - API para Integrações
+  ##########################################
+  chatwoot_api:
+    image: chatwoot/chatwoot:v4.0.2-ce
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    command: bundle exec rails s -p 3000 -b 0.0.0.0
+    entrypoint: docker/entrypoints/rails.sh
+
+    volumes:
+    - chatwoot_data_api:/app/storage
+
+    networks:
+    - network_swarm_public
+    - network_swarm_databases
+
+    environment:
+    ##########################################
+    # Configurações Gerais
+    ##########################################
+    - INSTALLATION_NAME=chatwoot
+    - NODE_ENV=production
+    - RAILS_ENV=production
+    - INSTALLATION_ENV=docker
+    - SECRET_KEY_BASE=${CHATWOOT_SECRET_KEY_BASE}
+    - FRONTEND_URL=${CHATWOOT_FRONTEND_URL}
+    - DEFAULT_LOCALE=pt-BR
+    - FORCE_SSL=true
+    - ENABLE_ACCOUNT_SIGNUP=false
+    - RAILS_LOG_TO_STDOUT=true
+    - USE_INBOX_AVATAR_FOR_BOT=true
+    - ENABLE_PUSH_RELAY_SERVER=true
+
+    ##########################################
+    # Redis
+    ##########################################
+    - REDIS_URL=redis://redis_redis:6379
+
+    ##########################################
+    # PostgreSQL
+    ##########################################
+    - POSTGRES_HOST=postgres_postgres
+    - POSTGRES_USERNAME=postgres
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    - POSTGRES_DATABASE=${CHATWOOT_DATABASE}
+
+    ##########################################
+    # Email (SMTP opcional)
+    ##########################################
+    - MAILER_SENDER_EMAIL=${CHATWOOT_MAILER_SENDER_EMAIL}
+    - SMTP_ADDRESS=${CHATWOOT_SMTP_ADDRESS}
+    - SMTP_AUTHENTICATION=login
+    - SMTP_DOMAIN=${CHATWOOT_SMTP_DOMAIN}
+    - SMTP_ENABLE_STARTTLS_AUTO=true
+    - SMTP_PORT=587
+    - SMTP_USERNAME=${CHATWOOT_SMTP_USERNAME}
+    - SMTP_PASSWORD=${CHATWOOT_SMTP_PASSWORD}
+    - SMTP_OPENSSL_VERIFY_MODE=peer
+    - MAILER_INBOUND_EMAIL_DOMAIN=${CHATWOOT_SMTP_DOMAIN}
+
+    ##########################################
+    # Storage (Local por padrão)
+    ##########################################
+    - ACTIVE_STORAGE_SERVICE=${CHATWOOT_STORAGE_SERVICE}
+
+    ##########################################
+    # Performance
+    ##########################################
+    - SIDEKIQ_CONCURRENCY=10
+    - WEB_CONCURRENCY=0
+    - RAILS_MAX_THREADS=5
+    - CW_API_ONLY_SERVER=true
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+        - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.chatwoot-api.rule=Host(`chat-api.${DOMAIN}`)"
+      - "traefik.http.routers.chatwoot-api.entrypoints=websecure"
+      - "traefik.http.routers.chatwoot-api.tls=true"
+      - "traefik.http.routers.chatwoot-api.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.chatwoot-api.service=chatwoot-api"
+      - "traefik.http.services.chatwoot-api.loadbalancer.server.port=3000"
+      - "traefik.http.services.chatwoot-api.loadbalancer.passhostheader=true"
+      - "traefik.http.middlewares.chatwoot-api-sslheader.headers.customrequestheaders.X-Forwarded-Proto=https"
+      - "traefik.http.routers.chatwoot-api.middlewares=chatwoot-api-sslheader"
+
+  ##########################################
+  # CHATWOOT SIDEKIQ - Background Jobs
+  ##########################################
+  chatwoot_sidekiq:
+    image: chatwoot/chatwoot:v4.0.2-ce
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    command: bundle exec sidekiq -C config/sidekiq.yml
+
+    volumes:
+    - chatwoot_data_sidekiq:/app/storage
+
+    networks:
+    - network_swarm_public
+    - network_swarm_databases
+
+    environment:
+    ##########################################
+    # Configurações Gerais
+    ##########################################
+    - INSTALLATION_NAME=chatwoot
+    - NODE_ENV=production
+    - RAILS_ENV=production
+    - INSTALLATION_ENV=docker
+    - SECRET_KEY_BASE=${CHATWOOT_SECRET_KEY_BASE}
+    - FRONTEND_URL=${CHATWOOT_FRONTEND_URL}
+    - DEFAULT_LOCALE=pt-BR
+    - FORCE_SSL=true
+    - ENABLE_ACCOUNT_SIGNUP=false
+    - RAILS_LOG_TO_STDOUT=true
+    - USE_INBOX_AVATAR_FOR_BOT=true
+    - ENABLE_PUSH_RELAY_SERVER=true
+
+    ##########################################
+    # Redis
+    ##########################################
+    - REDIS_URL=redis://redis_redis:6379
+
+    ##########################################
+    # PostgreSQL
+    ##########################################
+    - POSTGRES_HOST=postgres_postgres
+    - POSTGRES_USERNAME=postgres
+    - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    - POSTGRES_DATABASE=${CHATWOOT_DATABASE}
+
+    ##########################################
+    # Email (SMTP opcional)
+    ##########################################
+    - MAILER_SENDER_EMAIL=${CHATWOOT_MAILER_SENDER_EMAIL}
+    - SMTP_ADDRESS=${CHATWOOT_SMTP_ADDRESS}
+    - SMTP_AUTHENTICATION=login
+    - SMTP_DOMAIN=${CHATWOOT_SMTP_DOMAIN}
+    - SMTP_ENABLE_STARTTLS_AUTO=true
+    - SMTP_PORT=587
+    - SMTP_USERNAME=${CHATWOOT_SMTP_USERNAME}
+    - SMTP_PASSWORD=${CHATWOOT_SMTP_PASSWORD}
+    - SMTP_OPENSSL_VERIFY_MODE=peer
+    - MAILER_INBOUND_EMAIL_DOMAIN=${CHATWOOT_SMTP_DOMAIN}
+
+    ##########################################
+    # Storage (Local por padrão)
+    ##########################################
+    - ACTIVE_STORAGE_SERVICE=${CHATWOOT_STORAGE_SERVICE}
+
+    ##########################################
+    # Performance
+    ##########################################
+    - SIDEKIQ_CONCURRENCY=10
+    - WEB_CONCURRENCY=0
+    - RAILS_MAX_THREADS=5
+    - CW_API_ONLY_SERVER=false
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+        - node.role == manager
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2048M
+
+volumes:
+  chatwoot_data_admin:
+    external: true
+    name: chatwoot_data_admin
+  chatwoot_data_api:
+    external: true
+    name: chatwoot_data_api
+  chatwoot_data_sidekiq:
+    external: true
+    name: chatwoot_data_sidekiq
+
+networks:
+  network_swarm_public:
+    external: true
+    name: network_swarm_public
+  network_swarm_databases:
+    external: true
+    name: network_swarm_databases

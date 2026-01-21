@@ -26,6 +26,7 @@ show_final_info() {
     echo "   n8n Editor: https://fluxos.$domain"
     echo "   n8n Webhook: https://webhook.$domain"
     echo "   Evolution API: https://evo.$domain"
+    echo "   Stirling-PDF: https://stir.$domain"
     echo "   pgAdmin: http://$server_ip:4040"
     echo "   Portainer: https://$server_ip:9443"
     echo "   Traefik: https://traefik.$domain"
@@ -33,6 +34,7 @@ show_final_info() {
     echo "🔑 CREDENCIAIS:"
     echo "   n8n: $admin_email / $admin_password"
     echo "   Evolution API Key: ${EVOLUTION_API_KEY}"
+    echo "   Stirling-PDF: ${STIRLING_ADMIN_USERNAME} / ${STIRLING_ADMIN_PASSWORD}"
     echo "   pgAdmin: $admin_email / $pgadmin_password"
     echo "   Traefik: admin / $traefik_password"
     echo "   PostgreSQL: postgres / $db_password"
@@ -46,7 +48,8 @@ show_final_info() {
     echo "2. Configure DNS: fluxos.$domain → $server_ip"
     echo "3. Configure DNS: webhook.$domain → $server_ip"
     echo "4. Configure DNS: evo.$domain → $server_ip"
-    echo "5. Acesse n8n: https://fluxos.$domain"
+    echo "5. Configure DNS: stir.$domain → $server_ip"
+    echo "6. Acesse n8n: https://fluxos.$domain"
     echo ""
     print_error "📸 SALVE ESTE PRINT EM LOCAL SEGURO!"
     echo ""
@@ -168,6 +171,90 @@ print_info "API Key Evolution gerada: $EVOLUTION_API_KEY"
 
 # Nome do banco Evolution
 EVOLUTION_DATABASE="bravo_evolution"
+
+# Gerar credenciais do Stirling-PDF
+STIRLING_ADMIN_USERNAME="admin"
+STIRLING_ADMIN_PASSWORD=$(openssl rand -base64 12 | tr -d "=+/")
+print_info "Senha admin Stirling-PDF gerada: $STIRLING_ADMIN_PASSWORD"
+
+# Gerar credenciais do Chatwoot
+CHATWOOT_SECRET_KEY_BASE=$(openssl rand -hex 64 | tr -d '\n')
+print_info "Secret Key Chatwoot gerado (128 chars)"
+
+# Nome do banco Chatwoot
+CHATWOOT_DATABASE="chatwoot"
+
+# URLs do Chatwoot
+CHATWOOT_FRONTEND_URL="https://chat.${DOMAIN}"
+CHATWOOT_API_URL="https://chat-api.${DOMAIN}"
+
+# Storage (local por padrão)
+CHATWOOT_STORAGE_SERVICE="local"
+
+# Configurações SMTP do Chatwoot (opcional)
+CHATWOOT_MAILER_SENDER_EMAIL="Chatwoot <noreply@${DOMAIN}>"
+CHATWOOT_SMTP_ADDRESS=""
+CHATWOOT_SMTP_DOMAIN="${DOMAIN}"
+CHATWOOT_SMTP_USERNAME=""
+CHATWOOT_SMTP_PASSWORD=""
+
+# Verificar se SMTP está configurado para o Chatwoot
+smtp_config_file="/etc/n8n-installer/smtp.conf"
+if [[ -f "$smtp_config_file" ]]; then
+    source "$smtp_config_file"
+    if [[ -n "$SMTP_ADDRESS" ]] && [[ -n "$SMTP_USERNAME" ]] && [[ -n "$SMTP_PASSWORD" ]]; then
+        CHATWOOT_SMTP_ADDRESS="$SMTP_ADDRESS"
+        CHATWOOT_SMTP_USERNAME="$SMTP_USERNAME"
+        CHATWOOT_SMTP_PASSWORD="$SMTP_PASSWORD"
+        print_info "Configurações SMTP carregadas para Chatwoot"
+    fi
+fi
+
+echo ""
+echo "╔══════════════════════════════════════════════════════════════╗"
+echo "║                                                              ║"
+echo "║   🌐  CONFIGURAÇÃO DNS OBRIGATÓRIA                           ║"
+echo "║                                                              ║"
+echo "╚══════════════════════════════════════════════════════════════╝"
+echo ""
+print_error "⚠️  IMPORTANTE: Configure o DNS ANTES de prosseguir!"
+print_error "⚠️  Certificados SSL só funcionam se DNS estiver correto!"
+echo ""
+print_info "IP do servidor: $SERVER_IP"
+echo ""
+echo "📋 Configure as seguintes entradas DNS apontando para $SERVER_IP:"
+echo ""
+echo "   Tipo A:"
+echo "   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "   fluxos.$DOMAIN        →  $SERVER_IP"
+echo "   webhook.$DOMAIN       →  $SERVER_IP"
+echo "   evo.$DOMAIN           →  $SERVER_IP"
+echo "   stir.$DOMAIN          →  $SERVER_IP"
+echo "   chat.$DOMAIN          →  $SERVER_IP"
+echo "   chat-api.$DOMAIN      →  $SERVER_IP"
+echo "   traefik.$DOMAIN       →  $SERVER_IP  (opcional)"
+echo "   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+print_info "💡 Dica: Use seu provedor DNS (Cloudflare, GoDaddy, etc.)"
+print_info "💡 Aguarde 1-5 minutos após criar para propagação DNS"
+echo ""
+echo "🔍 Teste se o DNS está correto:"
+echo "   nslookup fluxos.$DOMAIN"
+echo "   ping fluxos.$DOMAIN"
+echo ""
+print_error "⚠️  NÃO prossiga sem configurar o DNS!"
+print_error "⚠️  Certificados SSL falharão se DNS estiver incorreto!"
+echo ""
+read -p "Confirmou que configurou TODOS os registros DNS? (y/N): " DNS_CONFIRMED
+if [[ ! "$DNS_CONFIRMED" =~ ^[Yy]$ ]]; then
+    print_error "Instalação cancelada. Configure o DNS e execute novamente."
+    exit 1
+fi
+echo ""
+print_success "✓ DNS confirmado pelo usuário"
+print_info "Aguardando 10 segundos para propagação DNS..."
+sleep 10
+echo ""
 
 # Função para envio seguro de credenciais via API
 send_credentials_email() {
@@ -320,6 +407,11 @@ docker volume create traefik_certs >/dev/null 2>&1 || true
 docker volume create portainer_data >/dev/null 2>&1 || true
 docker volume create pgadmin_data >/dev/null 2>&1 || true
 docker volume create evolution_v2_data >/dev/null 2>&1 || true
+docker volume create trainingData >/dev/null 2>&1 || true
+docker volume create extraConfigs >/dev/null 2>&1 || true
+docker volume create chatwoot_data_admin >/dev/null 2>&1 || true
+docker volume create chatwoot_data_api >/dev/null 2>&1 || true
+docker volume create chatwoot_data_sidekiq >/dev/null 2>&1 || true
 print_success "Volumes criados"
 
 # 6. Criar arquivo .env
@@ -345,6 +437,23 @@ PGADMIN_ADMIN_PASSWORD=$PGADMIN_ADMIN_PASSWORD
 EVOLUTION_API_KEY=$EVOLUTION_API_KEY
 EVOLUTION_DATABASE=$EVOLUTION_DATABASE
 EVOLUTION_URL=https://evo.$DOMAIN
+
+# Configurações do Stirling-PDF
+STIRLING_ADMIN_USERNAME=$STIRLING_ADMIN_USERNAME
+STIRLING_ADMIN_PASSWORD=$STIRLING_ADMIN_PASSWORD
+STIRLING_URL=https://stir.$DOMAIN
+
+# Configurações do Chatwoot
+CHATWOOT_SECRET_KEY_BASE=$CHATWOOT_SECRET_KEY_BASE
+CHATWOOT_DATABASE=$CHATWOOT_DATABASE
+CHATWOOT_FRONTEND_URL=$CHATWOOT_FRONTEND_URL
+CHATWOOT_API_URL=$CHATWOOT_API_URL
+CHATWOOT_STORAGE_SERVICE=$CHATWOOT_STORAGE_SERVICE
+CHATWOOT_MAILER_SENDER_EMAIL=$CHATWOOT_MAILER_SENDER_EMAIL
+CHATWOOT_SMTP_ADDRESS=$CHATWOOT_SMTP_ADDRESS
+CHATWOOT_SMTP_DOMAIN=$CHATWOOT_SMTP_DOMAIN
+CHATWOOT_SMTP_USERNAME=$CHATWOOT_SMTP_USERNAME
+CHATWOOT_SMTP_PASSWORD=$CHATWOOT_SMTP_PASSWORD
 
 # URLs finais
 EDITOR_URL=https://fluxos.$DOMAIN
@@ -439,6 +548,49 @@ docker stack deploy -c evolution/evolution.yaml evolution >/dev/null 2>&1
 sleep 5
 print_success "Evolution API instalado"
 
+# Exportar variáveis do Stirling-PDF
+export STIRLING_ADMIN_USERNAME="$STIRLING_ADMIN_USERNAME"
+export STIRLING_ADMIN_PASSWORD="$STIRLING_ADMIN_PASSWORD"
+
+# Deploy Stirling-PDF
+print_info "Instalando Stirling-PDF..."
+docker stack deploy -c stirling/stirling.yaml stirling >/dev/null 2>&1
+sleep 5
+print_success "Stirling-PDF instalado"
+
+# Criar banco de dados do Chatwoot
+print_info "Criando banco de dados ${CHATWOOT_DATABASE}..."
+POSTGRES_CONTAINER=$(docker ps -q -f name=postgres_postgres | head -n1)
+if [[ -n "$POSTGRES_CONTAINER" ]]; then
+    docker exec -i $POSTGRES_CONTAINER psql -U postgres -c "CREATE DATABASE ${CHATWOOT_DATABASE};" 2>/dev/null || \
+    docker exec -i $POSTGRES_CONTAINER psql -U postgres -c "SELECT 1 FROM pg_database WHERE datname='${CHATWOOT_DATABASE}';" | grep -q 1 && \
+    print_success "Banco ${CHATWOOT_DATABASE} criado/verificado" || \
+    print_info "Aguardando PostgreSQL... (tentando novamente em 5s)"
+    sleep 5
+    docker exec -i $POSTGRES_CONTAINER psql -U postgres -c "CREATE DATABASE ${CHATWOOT_DATABASE};" 2>/dev/null || true
+    print_success "Banco ${CHATWOOT_DATABASE} configurado"
+else
+    print_info "PostgreSQL ainda não está disponível - Chatwoot criará o banco na primeira conexão"
+fi
+
+# Exportar variáveis do Chatwoot
+export CHATWOOT_SECRET_KEY_BASE="$CHATWOOT_SECRET_KEY_BASE"
+export CHATWOOT_DATABASE="$CHATWOOT_DATABASE"
+export CHATWOOT_FRONTEND_URL="$CHATWOOT_FRONTEND_URL"
+export CHATWOOT_API_URL="$CHATWOOT_API_URL"
+export CHATWOOT_STORAGE_SERVICE="$CHATWOOT_STORAGE_SERVICE"
+export CHATWOOT_MAILER_SENDER_EMAIL="$CHATWOOT_MAILER_SENDER_EMAIL"
+export CHATWOOT_SMTP_ADDRESS="$CHATWOOT_SMTP_ADDRESS"
+export CHATWOOT_SMTP_DOMAIN="$CHATWOOT_SMTP_DOMAIN"
+export CHATWOOT_SMTP_USERNAME="$CHATWOOT_SMTP_USERNAME"
+export CHATWOOT_SMTP_PASSWORD="$CHATWOOT_SMTP_PASSWORD"
+
+# Deploy Chatwoot
+print_info "Instalando Chatwoot (admin + api + sidekiq)..."
+docker stack deploy -c chatwoot/chatwoot.yaml chatwoot >/dev/null 2>&1
+sleep 5
+print_success "Chatwoot instalado"
+
 # 9. Instalar ctop (opcional)
 if ! command -v docker-ctop >/dev/null 2>&1; then
     print_info "Instalando ctop..."
@@ -489,6 +641,9 @@ echo "🌐 === URLS DOS SERVIÇOS ==="
 echo "   n8n Editor: https://fluxos.$DOMAIN"
 echo "   n8n Webhook: https://webhook.$DOMAIN"
 echo "   Evolution API: https://evo.$DOMAIN"
+echo "   Stirling-PDF: https://stir.$DOMAIN"
+echo "   Chatwoot Admin: https://chat.$DOMAIN"
+echo "   Chatwoot API: https://chat-api.$DOMAIN"
 echo "   pgAdmin: http://$SERVER_IP:4040"
 echo "   Portainer: https://$SERVER_IP:9443"
 echo "   Traefik Dashboard: https://traefik.$DOMAIN"
@@ -497,6 +652,8 @@ echo ""
 echo "🔑 === CREDENCIAIS DE ACESSO ==="
 echo "   n8n: $INITIAL_ADMIN_EMAIL / $INITIAL_ADMIN_PASSWORD"
 echo "   Evolution API Key: $EVOLUTION_API_KEY"
+echo "   Stirling-PDF: $STIRLING_ADMIN_USERNAME / $STIRLING_ADMIN_PASSWORD"
+echo "   Chatwoot: Criar conta no primeiro acesso em https://chat.$DOMAIN"
 echo "   pgAdmin: $INITIAL_ADMIN_EMAIL / $PGADMIN_ADMIN_PASSWORD"
 echo "   Traefik: admin / $TRAEFIK_ADMIN_PASSWORD"
 echo "   PostgreSQL: postgres / $DB_PASSWORD"
@@ -514,7 +671,10 @@ echo "1️⃣ ACESSE O PORTAINER AGORA: https://$SERVER_IP:9443"
 echo "2️⃣ CONFIGURE DNS: fluxos.$DOMAIN → $SERVER_IP"
 echo "3️⃣ CONFIGURE DNS: webhook.$DOMAIN → $SERVER_IP"
 echo "4️⃣ CONFIGURE DNS: evo.$DOMAIN → $SERVER_IP"
-echo "5️⃣ AGUARDE 2 MIN e acesse: https://fluxos.$DOMAIN"
+echo "5️⃣ CONFIGURE DNS: stir.$DOMAIN → $SERVER_IP"
+echo "6️⃣ CONFIGURE DNS: chat.$DOMAIN → $SERVER_IP"
+echo "7️⃣ CONFIGURE DNS: chat-api.$DOMAIN → $SERVER_IP"
+echo "8️⃣ AGUARDE 2 MIN e acesse: https://fluxos.$DOMAIN"
 echo ""
 
 # Email section removida para evitar travamentos
@@ -526,6 +686,9 @@ echo "🌐 URLs DOS SERVIÇOS:"
 echo "   n8n Editor: https://fluxos.$DOMAIN"
 echo "   n8n Webhook: https://webhook.$DOMAIN"
 echo "   Evolution API: https://evo.$DOMAIN"
+echo "   Stirling-PDF: https://stir.$DOMAIN"
+echo "   Chatwoot Admin: https://chat.$DOMAIN"
+echo "   Chatwoot API: https://chat-api.$DOMAIN"
 echo "   pgAdmin: http://$SERVER_IP:4040"
 echo "   Portainer: https://$SERVER_IP:9443"
 echo "   Traefik Dashboard: https://traefik.$DOMAIN"
@@ -534,6 +697,8 @@ echo ""
 echo "🔑 CREDENCIAIS DE ACESSO:"
 echo "   n8n: $INITIAL_ADMIN_EMAIL / $INITIAL_ADMIN_PASSWORD"
 echo "   Evolution API Key: $EVOLUTION_API_KEY"
+echo "   Stirling-PDF: $STIRLING_ADMIN_USERNAME / $STIRLING_ADMIN_PASSWORD"
+echo "   Chatwoot: Criar conta no primeiro acesso em https://chat.$DOMAIN"
 echo "   pgAdmin: $INITIAL_ADMIN_EMAIL / $PGADMIN_ADMIN_PASSWORD"
 echo "   Traefik: admin / $TRAEFIK_ADMIN_PASSWORD"
 echo ""
@@ -548,12 +713,13 @@ echo "   ✅ Portainer resetado - contador iniciado AGORA!"
 echo ""
 
 echo "✅ APLICAÇÕES INSTALADAS AUTOMATICAMENTE:"
-echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin + Evolution API"
+echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin + Evolution API + Stirling-PDF"
 echo ""
 echo "2️⃣ CONFIGURE O DNS:"
 echo "   fluxos.$DOMAIN → $SERVER_IP"
 echo "   webhook.$DOMAIN → $SERVER_IP"
 echo "   evo.$DOMAIN → $SERVER_IP"
+echo "   stir.$DOMAIN → $SERVER_IP"
 echo "   traefik.$DOMAIN → $SERVER_IP (opcional)"
 echo ""
 echo "3️⃣ AGUARDE ~2 MINUTOS e acesse:"
@@ -603,6 +769,7 @@ echo "🎯 RESUMO FINAL:"
 echo "   • Portainer: https://$SERVER_IP:9443 (5 min para configurar!)"
 echo "   • n8n: https://fluxos.$DOMAIN (após configurar DNS)"
 echo "   • Evolution API: https://evo.$DOMAIN (após configurar DNS)"
+echo "   • Stirling-PDF: https://stir.$DOMAIN (após configurar DNS)"
 echo "   • pgAdmin: http://$SERVER_IP:4040"
 echo ""
 print_error "📸 NÃO ESQUEÇA DE SALVAR ESTE PRINT!"
