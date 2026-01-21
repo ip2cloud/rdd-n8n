@@ -27,20 +27,19 @@ sudo ./install-simple.sh
 sudo ./setup-smtp.sh
 ```
 
-### 3️⃣ Responda 5-6 perguntas simples:
+### 3️⃣ Responda 4-5 perguntas simples:
 
 1. **Email do administrador**: seu-email@exemplo.com
-2. **Domínio principal**: exemplo.com  
+2. **Domínio principal**: exemplo.com
 3. **Nome do banco** [ENTER = n8n]: nome_do_banco (opcional)
 4. **Senha do PostgreSQL** [ENTER = auto-gerar]: senha (opcional)
 5. **Receber credenciais por email** [ENTER = Sim]: Y/n (se SMTP configurado)
-6. **Deploy automático** [ENTER = Sim]: Y/n
 
 > 💡 **Recomendado**: Tecle ENTER em tudo para usar os padrões
 
-### 4️⃣ Aguarde ~5 minutos e pronto! 
+### 4️⃣ Aguarde ~5 minutos e pronto!
 
-✅ **Tudo instalado automaticamente!**
+✅ **Tudo instalado automaticamente sem perguntas adicionais!**
 
 ---
 
@@ -75,8 +74,9 @@ traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
 
 ### Portainer (Monitoramento Docker)
 - **URL**: https://IP_DO_SERVIDOR:9443
-- **Primeiro acesso**: Defina senha do admin
+- **Primeiro acesso**: Defina senha do admin (5 minutos após instalação)
 - **Função**: Monitorar containers e serviços
+- **Importante**: O script reseta o Portainer no final para garantir 5 minutos limpos
 
 ### Traefik (Dashboard do Proxy)
 - **URL**: https://traefik.SEU-DOMINIO.com
@@ -200,21 +200,21 @@ sudo ./uninstall.sh
 - Remove redes overlay
 - Mantém backup do `.env`
 
-### Deploy Manual via API (se necessário)
-```bash
-./deploy-api.sh
-```
-- Para casos onde o deploy automático falhou
-- Usa API do Portainer para deploy
-- Não requer upload manual de arquivos
-
-### Criação Manual do Banco (se necessário)
+### Criação Manual do Banco n8n (se necessário)
 ```bash
 ./create-database.sh
 ```
 - Cria o banco n8n manualmente se não foi criado automaticamente
 - Conecta no PostgreSQL e executa CREATE DATABASE
 - Útil para resolver erro "database does not exist"
+
+### Criação Manual do Banco Evolution (se necessário)
+```bash
+./create-evolution-database.sh
+```
+- Cria o banco do Evolution API manualmente
+- Verifica se o banco já existe antes de criar
+- Útil se Evolution API apresentar erro "database does not exist"
 
 ---
 
@@ -232,6 +232,10 @@ INITIAL_ADMIN_EMAIL=seu@email.com
 INITIAL_ADMIN_PASSWORD=senha_gerada_automaticamente
 TRAEFIK_ADMIN_PASSWORD=senha_gerada_automaticamente
 TRAEFIK_ADMIN_HASH=hash_gerado_automaticamente
+PGADMIN_ADMIN_PASSWORD=senha_gerada_automaticamente
+EVOLUTION_API_KEY=chave_gerada_automaticamente
+EVOLUTION_DATABASE=bravo_evolution
+EVOLUTION_URL=https://evo.seu-dominio.com
 EDITOR_URL=https://fluxos.seu-dominio.com
 WEBHOOK_URL=https://webhook.seu-dominio.com
 ```
@@ -288,14 +292,22 @@ docker service logs n8n_editor_n8n
 
 ### Erro "database does not exist"?
 ```bash
-# Criar banco manualmente se necessário
+# Criar banco n8n manualmente
 ./create-database.sh
+
+# Criar banco Evolution API manualmente
+./create-evolution-database.sh
 ```
 
 ### Portainer não acessa?
 ```bash
 # Verificar se está rodando
 docker service ls | grep portainer
+
+# Resetar timeout (5 minutos novos)
+docker service scale portainer_portainer=0
+sleep 3
+docker service scale portainer_portainer=1
 
 # Reinstalar se necessário
 docker stack deploy -c portainer/portainer.yaml portainer
@@ -358,10 +370,11 @@ Os serviços precisam de um tempo para inicializar completamente.
 - URL: https://fluxos.SEU-DOMINIO.com
 - Use as credenciais mostradas no final da instalação
 
-### 5️⃣ Monitore no Portainer (opcional)
+### 5️⃣ Monitore no Portainer (URGENTE!)
 - URL: https://IP_DO_SERVIDOR:9443
 - Crie senha do admin no primeiro acesso
-- ⚠️ **IMPORTANTE**: Acesse em até 10 minutos após instalação
+- ⚠️ **IMPORTANTE**: Acesse em até 5 minutos após instalação
+- ✅ O script reseta o Portainer no final - você tem 5 minutos limpos
 
 ### 6️⃣ Acesse pgAdmin (se necessário)
 - URL: http://IP_DO_SERVIDOR:4040
@@ -412,8 +425,8 @@ Tudo funciona automaticamente com SSL via Traefik e modo queue para alta perform
 
 ### 🚀 Principais Recursos:
 - ✅ **Docker Swarm** - Orquestração robusta
-- ✅ **n8n Queue Mode** - Editor + Webhook + Worker
-- ✅ **PostgreSQL 16** - Banco de dados principal
+- ✅ **n8n v2.4.3 Queue Mode** - Editor + Webhook + Worker
+- ✅ **PostgreSQL 16 + pgvector** - Banco de dados com suporte a vetores (AI)
 - ✅ **Redis 7** - Cache e filas de trabalho
 - ✅ **Traefik v3** - Proxy reverso com SSL automático
 - ✅ **Evolution API v2.3.6** - WhatsApp Multi-Device API

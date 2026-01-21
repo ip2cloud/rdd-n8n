@@ -37,8 +37,9 @@ show_final_info() {
     echo "   Traefik: admin / $traefik_password"
     echo "   PostgreSQL: postgres / $db_password"
     echo ""
-    echo "🚨 URGENTE: PORTAINER (10 MINUTOS!)"
+    echo "🚨 URGENTE: PORTAINER (5 MINUTOS!)"
     echo "   https://$server_ip:9443"
+    echo "   ⏰ Acesse AGORA para definir senha admin!"
     echo ""
     echo "📋 PRÓXIMOS PASSOS:"
     echo "1. Acesse Portainer: https://$server_ip:9443"
@@ -69,8 +70,8 @@ print_info() { echo -e "${YELLOW}→ $1${NC}"; }
 clear
 echo "╔══════════════════════════════════════════╗"
 echo "║     INSTALAÇÃO AUTOMÁTICA DO N8N         ║"
-echo "║     Docker + PostgreSQL + Redis          ║"
-echo "║           Versão FINAL v4                ║"
+echo "║  Docker + PostgreSQL + Redis + Evolution ║"
+echo "║      Versão FINAL v5 - 100% Automática   ║"
 echo "╔══════════════════════════════════════════╝"
 echo ""
 
@@ -166,7 +167,7 @@ EVOLUTION_API_KEY=$(openssl rand -hex 16 | tr -d '\n')
 print_info "API Key Evolution gerada: $EVOLUTION_API_KEY"
 
 # Nome do banco Evolution
-EVOLUTION_DATABASE="${DATABASE}_evolution"
+EVOLUTION_DATABASE="bravo_evolution"
 
 # Função para envio seguro de credenciais via API
 send_credentials_email() {
@@ -367,64 +368,76 @@ sleep 5
 print_success "Traefik instalado"
 
 # 9. Deploy automático das aplicações
-read -p "Deseja instalar automaticamente PostgreSQL + Redis + n8n + pgAdmin? (Y/n): " AUTO_DEPLOY
-if [[ ! "$AUTO_DEPLOY" =~ ^[Nn]$ ]]; then
-    print_info "Deployando aplicações automaticamente..."
-    
-    # Exportar todas as variáveis necessárias antes dos deploys
-    export DOMAIN="$DOMAIN"
-    export DATABASE="$DATABASE" 
-    export DATABASE_PASSWORD="$DB_PASSWORD"
-    export POSTGRES_PASSWORD="$DB_PASSWORD"
-    export N8N_ENCRYPTION_KEY="$N8N_ENCRYPTION_KEY"
-    export INITIAL_ADMIN_EMAIL="$INITIAL_ADMIN_EMAIL"
-    export INITIAL_ADMIN_PASSWORD="$INITIAL_ADMIN_PASSWORD"
-    export PGADMIN_ADMIN_PASSWORD="$PGADMIN_ADMIN_PASSWORD"
-    
-    # Deploy PostgreSQL
-    print_info "Instalando PostgreSQL..."
-    docker stack deploy -c postgres16/postgres.yaml postgres >/dev/null 2>&1
-    sleep 10
-    print_success "PostgreSQL instalado"
-    
-    # Deploy Redis
-    print_info "Instalando Redis..."
-    docker stack deploy -c redis/redis.yaml redis >/dev/null 2>&1
+print_info "Deployando aplicações automaticamente..."
+
+# Exportar todas as variáveis necessárias antes dos deploys
+export DOMAIN="$DOMAIN"
+export DATABASE="$DATABASE"
+export DATABASE_PASSWORD="$DB_PASSWORD"
+export POSTGRES_PASSWORD="$DB_PASSWORD"
+export N8N_ENCRYPTION_KEY="$N8N_ENCRYPTION_KEY"
+export INITIAL_ADMIN_EMAIL="$INITIAL_ADMIN_EMAIL"
+export INITIAL_ADMIN_PASSWORD="$INITIAL_ADMIN_PASSWORD"
+export PGADMIN_ADMIN_PASSWORD="$PGADMIN_ADMIN_PASSWORD"
+
+# Deploy PostgreSQL
+print_info "Instalando PostgreSQL..."
+docker stack deploy -c postgres16/postgres.yaml postgres >/dev/null 2>&1
+sleep 10
+print_success "PostgreSQL instalado"
+
+# Deploy Redis
+print_info "Instalando Redis..."
+docker stack deploy -c redis/redis.yaml redis >/dev/null 2>&1
+sleep 5
+print_success "Redis instalado"
+
+# Deploy n8n (com delay entre editor e demais)
+print_info "Instalando n8n Editor..."
+docker stack deploy -c n8n/queue/orq_editor.yaml n8n_editor >/dev/null 2>&1
+print_success "n8n Editor instalado"
+
+print_info "Aguardando 1 minuto para o Editor inicializar..."
+sleep 60
+
+print_info "Instalando n8n Webhook e Worker..."
+docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook >/dev/null 2>&1
+docker stack deploy -c n8n/queue/orq_worker.yaml n8n_worker >/dev/null 2>&1
+print_success "n8n completo instalado"
+
+# Deploy pgAdmin
+print_info "Instalando pgAdmin..."
+docker stack deploy -c pgadmin/pgadmin.yaml pgadmin >/dev/null 2>&1
+print_success "pgAdmin instalado"
+
+# Aguardar PostgreSQL estar completamente pronto
+print_info "Aguardando PostgreSQL estar pronto..."
+sleep 10
+
+# Criar banco de dados do Evolution API
+print_info "Criando banco de dados ${EVOLUTION_DATABASE}..."
+POSTGRES_CONTAINER=$(docker ps -q -f name=postgres_postgres | head -n1)
+if [[ -n "$POSTGRES_CONTAINER" ]]; then
+    docker exec -i $POSTGRES_CONTAINER psql -U postgres -c "CREATE DATABASE ${EVOLUTION_DATABASE};" 2>/dev/null || \
+    docker exec -i $POSTGRES_CONTAINER psql -U postgres -c "SELECT 1 FROM pg_database WHERE datname='${EVOLUTION_DATABASE}';" | grep -q 1 && \
+    print_success "Banco ${EVOLUTION_DATABASE} criado/verificado" || \
+    print_info "Aguardando PostgreSQL... (tentando novamente em 5s)"
     sleep 5
-    print_success "Redis instalado"
-    
-    # Deploy n8n (com delay entre editor e demais)
-    print_info "Instalando n8n Editor..."
-    docker stack deploy -c n8n/queue/orq_editor.yaml n8n_editor >/dev/null 2>&1
-    print_success "n8n Editor instalado"
-    
-    print_info "Aguardando 1 minuto para o Editor inicializar..."
-    sleep 60
-    
-    print_info "Instalando n8n Webhook e Worker..."
-    docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook >/dev/null 2>&1
-    docker stack deploy -c n8n/queue/orq_worker.yaml n8n_worker >/dev/null 2>&1
-    print_success "n8n completo instalado"
-    
-    # Deploy pgAdmin
-    print_info "Instalando pgAdmin..."
-    docker stack deploy -c pgadmin/pgadmin.yaml pgadmin >/dev/null 2>&1
-    print_success "pgAdmin instalado"
-
-    # Exportar variáveis do Evolution
-    export EVOLUTION_API_KEY="$EVOLUTION_API_KEY"
-    export EVOLUTION_DATABASE="$EVOLUTION_DATABASE"
-
-    # Deploy Evolution API (cria o banco automaticamente)
-    print_info "Instalando Evolution API..."
-    docker stack deploy -c evolution/evolution.yaml evolution >/dev/null 2>&1
-    sleep 5
-    print_success "Evolution API instalado (banco será criado automaticamente)"
-
-    AUTO_DEPLOYED=true
+    docker exec -i $POSTGRES_CONTAINER psql -U postgres -c "CREATE DATABASE ${EVOLUTION_DATABASE};" 2>/dev/null || true
+    print_success "Banco ${EVOLUTION_DATABASE} configurado"
 else
-    AUTO_DEPLOYED=false
+    print_info "PostgreSQL ainda não está disponível - Evolution criará o banco na primeira conexão"
 fi
+
+# Exportar variáveis do Evolution
+export EVOLUTION_API_KEY="$EVOLUTION_API_KEY"
+export EVOLUTION_DATABASE="$EVOLUTION_DATABASE"
+
+# Deploy Evolution API
+print_info "Instalando Evolution API..."
+docker stack deploy -c evolution/evolution.yaml evolution >/dev/null 2>&1
+sleep 5
+print_success "Evolution API instalado"
 
 # 9. Instalar ctop (opcional)
 if ! command -v docker-ctop >/dev/null 2>&1; then
@@ -440,12 +453,20 @@ if ! command -v docker-ctop >/dev/null 2>&1; then
     print_success "ctop instalado"
 fi
 
+# 10. Resetar timeout do Portainer (fix: timeout de 5 minutos)
+print_info "Resetando Portainer para garantir 5 minutos de acesso..."
+docker service scale portainer_portainer=0 >/dev/null 2>&1
+sleep 3
+docker service scale portainer_portainer=1 >/dev/null 2>&1
+sleep 5
+print_success "Portainer resetado - você tem 5 minutos para acessar!"
+
 # Resultado final
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║         INSTALAÇÃO CONCLUÍDA!            ║"
-echo "║           Versão: 2025.07.17             ║"
-echo "║             Versão FINAL v4              ║"
+echo "║         Versão FINAL v5 - 2025           ║"
+echo "║         100% Automática + Evolution      ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 
@@ -483,8 +504,9 @@ echo ""
 
 echo "🚨 === URGENTE: PORTAINER ==="
 echo "   URL: https://$SERVER_IP:9443"
-echo "   ⏰ IMPORTANTE: Você tem apenas 10 MINUTOS para acessar!"
-echo "   🚨 Após 10 min sem acesso, o Portainer bloqueia a configuração!"
+echo "   ⏰ IMPORTANTE: Você tem apenas 5 MINUTOS para acessar!"
+echo "   🚨 Após 5 min sem acesso, o Portainer bloqueia a configuração!"
+echo "   ✅ O Portainer foi resetado agora - contador zerado!"
 echo ""
 
 echo "📋 === PRÓXIMOS PASSOS ==="
@@ -520,41 +542,26 @@ echo "🚀 PRÓXIMOS PASSOS:"
 echo ""
 echo "1️⃣ ACESSE O PORTAINER AGORA (URGENTE!):"
 echo "   https://$SERVER_IP:9443"
-echo "   ⏰ Você tem 10 MINUTOS para definir senha!"
-echo "   🚨 Após 10 min, será necessário redeployar!"
+echo "   ⏰ Você tem 5 MINUTOS para definir senha!"
+echo "   🚨 Após 5 min, será necessário redeployar!"
+echo "   ✅ Portainer resetado - contador iniciado AGORA!"
 echo ""
 
-echo "DEBUG: Verificando AUTO_DEPLOYED: $AUTO_DEPLOYED"
-if [[ "$AUTO_DEPLOYED" == "true" ]]; then
-    echo "✅ APLICAÇÕES INSTALADAS AUTOMATICAMENTE:"
-    echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin + Evolution API"
-    echo ""
-    echo "2️⃣ CONFIGURE O DNS:"
-    echo "   fluxos.$DOMAIN → $SERVER_IP"
-    echo "   webhook.$DOMAIN → $SERVER_IP"
-    echo "   evo.$DOMAIN → $SERVER_IP"
-    echo "   traefik.$DOMAIN → $SERVER_IP (opcional)"
-    echo ""
-    echo "3️⃣ AGUARDE ~2 MINUTOS e acesse:"
-    echo "   https://fluxos.$DOMAIN"
-    echo ""
-    echo "4️⃣ MONITORE NO PORTAINER:"
-    echo "   Verifique se todos os serviços estão rodando"
-    echo "   Acompanhe logs e status dos containers"
-else
-    echo "🔧 DEPLOY MANUAL NECESSÁRIO:"
-    echo "   Use: ./deploy-api.sh (após configurar Portainer)"
-    echo ""
-    echo "2️⃣ CONFIGURE O DNS:"
-    echo "   fluxos.$DOMAIN → $SERVER_IP"
-    echo "   webhook.$DOMAIN → $SERVER_IP"
-    echo "   evo.$DOMAIN → $SERVER_IP"
-    echo "   traefik.$DOMAIN → $SERVER_IP (opcional)"
-    echo ""
-    echo "3️⃣ DEPLOY VIA API:"
-    echo "   ./deploy-api.sh"
-    echo "   (Script automatizado para deploy via API do Portainer)"
-fi
+echo "✅ APLICAÇÕES INSTALADAS AUTOMATICAMENTE:"
+echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin + Evolution API"
+echo ""
+echo "2️⃣ CONFIGURE O DNS:"
+echo "   fluxos.$DOMAIN → $SERVER_IP"
+echo "   webhook.$DOMAIN → $SERVER_IP"
+echo "   evo.$DOMAIN → $SERVER_IP"
+echo "   traefik.$DOMAIN → $SERVER_IP (opcional)"
+echo ""
+echo "3️⃣ AGUARDE ~2 MINUTOS e acesse:"
+echo "   https://fluxos.$DOMAIN"
+echo ""
+echo "4️⃣ MONITORE NO PORTAINER:"
+echo "   Verifique se todos os serviços estão rodando"
+echo "   Acompanhe logs e status dos containers"
 
 echo ""
 echo "🔑 ⚠️  CREDENCIAIS CRÍTICAS - SALVE ESTA INFORMAÇÃO! ⚠️"
@@ -593,7 +600,7 @@ echo "⏰ AGUARDE ~2 MINUTOS antes de acessar os serviços"
 echo "🔄 Os containers precisam de tempo para inicializar"
 echo ""
 echo "🎯 RESUMO FINAL:"
-echo "   • Portainer: https://$SERVER_IP:9443 (10 min para configurar!)"
+echo "   • Portainer: https://$SERVER_IP:9443 (5 min para configurar!)"
 echo "   • n8n: https://fluxos.$DOMAIN (após configurar DNS)"
 echo "   • Evolution API: https://evo.$DOMAIN (após configurar DNS)"
 echo "   • pgAdmin: http://$SERVER_IP:4040"
