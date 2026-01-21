@@ -27,20 +27,19 @@ sudo ./install-simple.sh
 sudo ./setup-smtp.sh
 ```
 
-### 3️⃣ Responda 5-6 perguntas simples:
+### 3️⃣ Responda 4-5 perguntas simples:
 
 1. **Email do administrador**: seu-email@exemplo.com
-2. **Domínio principal**: exemplo.com  
+2. **Domínio principal**: exemplo.com
 3. **Nome do banco** [ENTER = n8n]: nome_do_banco (opcional)
 4. **Senha do PostgreSQL** [ENTER = auto-gerar]: senha (opcional)
 5. **Receber credenciais por email** [ENTER = Sim]: Y/n (se SMTP configurado)
-6. **Deploy automático** [ENTER = Sim]: Y/n
 
 > 💡 **Recomendado**: Tecle ENTER em tudo para usar os padrões
 
-### 4️⃣ Aguarde ~5 minutos e pronto! 
+### 4️⃣ Aguarde ~5 minutos e pronto!
 
-✅ **Tudo instalado automaticamente!**
+✅ **Tudo instalado automaticamente sem perguntas adicionais!**
 
 ---
 
@@ -200,14 +199,6 @@ sudo ./uninstall.sh
 - Desativa Docker Swarm
 - Remove redes overlay
 - Mantém backup do `.env`
-
-### Deploy Manual via API (se necessário)
-```bash
-./deploy-api.sh
-```
-- Para casos onde o deploy automático falhou
-- Usa API do Portainer para deploy
-- Não requer upload manual de arquivos
 
 ### Criação Manual do Banco (se necessário)
 ```bash
@@ -419,8 +410,8 @@ Tudo funciona automaticamente com SSL via Traefik e modo queue para alta perform
 
 ### 🚀 Principais Recursos:
 - ✅ **Docker Swarm** - Orquestração robusta
-- ✅ **n8n Queue Mode** - Editor + Webhook + Worker
-- ✅ **PostgreSQL 16** - Banco de dados principal
+- ✅ **n8n v2.4.3 Queue Mode** - Editor + Webhook + Worker
+- ✅ **PostgreSQL 16 + pgvector** - Banco de dados com suporte a vetores (AI)
 - ✅ **Redis 7** - Cache e filas de trabalho
 - ✅ **Traefik v3** - Proxy reverso com SSL automático
 - ✅ **Evolution API v2.3.6** - WhatsApp Multi-Device API

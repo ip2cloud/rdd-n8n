@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **fully automated Docker Swarm deployment project** for n8n workflow automation platform. The project provides a one-click installation that sets up a complete production-ready environment with:
 - Docker Swarm orchestration
-- PostgreSQL 16 + Redis 7 databases
-- n8n in queue mode (editor + webhook + worker)
+- PostgreSQL 16 with pgvector + Redis 7 databases
+- n8n v2.4.3 in queue mode (editor + webhook + worker)
 - Evolution API v2.3.6 for WhatsApp Multi-Device integration
 - Traefik reverse proxy with automatic SSL
 - Portainer for container management
@@ -18,8 +18,9 @@ This is a **fully automated Docker Swarm deployment project** for n8n workflow a
 
 The project uses a **fully automated approach** with optional email integration:
 - **Single command**: `sudo ./install-simple.sh` installs everything
+- **4-5 simple questions**: Email, domain, database name (optional), password (optional), SMTP (if configured)
 - **Optional SMTP**: Configure with `sudo ./setup-smtp.sh` for credential delivery
-- **Zero manual steps**: All services deployed automatically
+- **Zero manual steps**: All services deployed automatically without confirmation prompts
 - **Secure by default**: No hardcoded credentials in repository
 
 ## Key Files
@@ -45,11 +46,11 @@ The project uses a **fully automated approach** with optional email integration:
 ### Service Configurations
 - `traefik/traefik.yaml` - Traefik v3 reverse proxy with Let's Encrypt support
 - `portainer/portainer.yaml` - Portainer Docker management UI
-- `postgres16/postgres.yaml` - PostgreSQL 16 with dynamic password
+- `postgres16/postgres.yaml` - PostgreSQL 16 with pgvector extension
 - `redis/redis.yaml` - Redis 7 for caching and queues
-- `n8n/queue/orq_editor.yaml` - n8n editor interface (v1.123.7)
-- `n8n/queue/orq_webhook.yaml` - n8n webhook handler (v1.123.7)
-- `n8n/queue/orq_worker.yaml` - n8n background worker (v1.123.7)
+- `n8n/queue/orq_editor.yaml` - n8n editor interface (v2.4.3)
+- `n8n/queue/orq_webhook.yaml` - n8n webhook handler (v2.4.3)
+- `n8n/queue/orq_worker.yaml` - n8n background worker (v2.4.3)
 - `evolution/evolution.yaml` - Evolution API v2.3.6 for WhatsApp Multi-Device
 - `pgadmin/pgadmin.yaml` - pgAdmin 4 web interface (direct IP:4040 access)
 
@@ -122,21 +123,16 @@ sudo chmod 600 /etc/n8n-installer/smtp.conf
 
 ## Deployment Process
 
-### Automatic Deployment (Default)
+### Automatic Deployment (Always)
 1. Run installer: `sudo ./install-simple.sh`
-2. Answer 5-6 simple questions
-3. Choose automatic deployment (default: Yes)
+2. Answer 4-5 simple questions (email, domain, database name, password, SMTP)
+3. Full stack deploys automatically (no manual intervention)
 4. Wait ~5 minutes for complete setup
 5. **IMPORTANT**: Access Portainer immediately (5-minute window to set admin password)
 6. Access n8n at `https://fluxos.DOMAIN`
 7. Access Evolution API at `https://evo.DOMAIN`
 
 **Note**: The script automatically resets Portainer at the end to provide a fresh 5-minute window for initial setup.
-
-### Manual Deployment (Alternative)
-1. Choose manual deployment during installation
-2. Use Portainer UI or `./deploy-api.sh` script
-3. All YAML files ready with variable substitution
 
 ## Common Tasks
 
@@ -221,11 +217,12 @@ sudo ./install-simple.sh  # Just run installer again
 ## Technical Details
 
 ### n8n Queue Mode Configuration
+- **Version**: v2.4.3
 - **Editor**: Web interface for workflow creation
 - **Webhook**: Handles incoming webhook requests
 - **Worker**: Processes background jobs
 - **Queue**: Redis-based job queue system
-- **Database**: PostgreSQL for persistence
+- **Database**: PostgreSQL 16 with pgvector for persistence and AI features
 
 ### Traefik Integration
 - Automatic service discovery via Docker labels
@@ -302,6 +299,15 @@ sudo ./install-simple.sh  # Just run installer again
 - **Storage**: `/certs/acme.json` in traefik_certs volume
 - **Renewal**: Automatic via Traefik
 - **Domains**: All configured subdomains get individual certificates (fluxos, webhook, evo, traefik)
+
+### PostgreSQL with pgvector
+- **Image**: pgvector/pgvector:pg16
+- **Purpose**: Vector similarity search for AI/ML features in n8n
+- **Features**:
+  - Standard PostgreSQL 16 functionality
+  - pgvector extension pre-installed for embedding storage
+  - Supports AI agent memory and semantic search in n8n workflows
+  - Compatible with all PostgreSQL tools and clients
 
 ### Evolution API Integration
 - **Version**: v2.3.6 (evoapicloud/evolution-api)

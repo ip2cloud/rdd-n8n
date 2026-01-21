@@ -70,8 +70,8 @@ print_info() { echo -e "${YELLOW}→ $1${NC}"; }
 clear
 echo "╔══════════════════════════════════════════╗"
 echo "║     INSTALAÇÃO AUTOMÁTICA DO N8N         ║"
-echo "║     Docker + PostgreSQL + Redis          ║"
-echo "║           Versão FINAL v4                ║"
+echo "║  Docker + PostgreSQL + Redis + Evolution ║"
+echo "║      Versão FINAL v5 - 100% Automática   ║"
 echo "╔══════════════════════════════════════════╝"
 echo ""
 
@@ -368,64 +368,57 @@ sleep 5
 print_success "Traefik instalado"
 
 # 9. Deploy automático das aplicações
-read -p "Deseja instalar automaticamente PostgreSQL + Redis + n8n + pgAdmin? (Y/n): " AUTO_DEPLOY
-if [[ ! "$AUTO_DEPLOY" =~ ^[Nn]$ ]]; then
-    print_info "Deployando aplicações automaticamente..."
-    
-    # Exportar todas as variáveis necessárias antes dos deploys
-    export DOMAIN="$DOMAIN"
-    export DATABASE="$DATABASE" 
-    export DATABASE_PASSWORD="$DB_PASSWORD"
-    export POSTGRES_PASSWORD="$DB_PASSWORD"
-    export N8N_ENCRYPTION_KEY="$N8N_ENCRYPTION_KEY"
-    export INITIAL_ADMIN_EMAIL="$INITIAL_ADMIN_EMAIL"
-    export INITIAL_ADMIN_PASSWORD="$INITIAL_ADMIN_PASSWORD"
-    export PGADMIN_ADMIN_PASSWORD="$PGADMIN_ADMIN_PASSWORD"
-    
-    # Deploy PostgreSQL
-    print_info "Instalando PostgreSQL..."
-    docker stack deploy -c postgres16/postgres.yaml postgres >/dev/null 2>&1
-    sleep 10
-    print_success "PostgreSQL instalado"
-    
-    # Deploy Redis
-    print_info "Instalando Redis..."
-    docker stack deploy -c redis/redis.yaml redis >/dev/null 2>&1
-    sleep 5
-    print_success "Redis instalado"
-    
-    # Deploy n8n (com delay entre editor e demais)
-    print_info "Instalando n8n Editor..."
-    docker stack deploy -c n8n/queue/orq_editor.yaml n8n_editor >/dev/null 2>&1
-    print_success "n8n Editor instalado"
-    
-    print_info "Aguardando 1 minuto para o Editor inicializar..."
-    sleep 60
-    
-    print_info "Instalando n8n Webhook e Worker..."
-    docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook >/dev/null 2>&1
-    docker stack deploy -c n8n/queue/orq_worker.yaml n8n_worker >/dev/null 2>&1
-    print_success "n8n completo instalado"
-    
-    # Deploy pgAdmin
-    print_info "Instalando pgAdmin..."
-    docker stack deploy -c pgadmin/pgadmin.yaml pgadmin >/dev/null 2>&1
-    print_success "pgAdmin instalado"
+print_info "Deployando aplicações automaticamente..."
 
-    # Exportar variáveis do Evolution
-    export EVOLUTION_API_KEY="$EVOLUTION_API_KEY"
-    export EVOLUTION_DATABASE="$EVOLUTION_DATABASE"
+# Exportar todas as variáveis necessárias antes dos deploys
+export DOMAIN="$DOMAIN"
+export DATABASE="$DATABASE"
+export DATABASE_PASSWORD="$DB_PASSWORD"
+export POSTGRES_PASSWORD="$DB_PASSWORD"
+export N8N_ENCRYPTION_KEY="$N8N_ENCRYPTION_KEY"
+export INITIAL_ADMIN_EMAIL="$INITIAL_ADMIN_EMAIL"
+export INITIAL_ADMIN_PASSWORD="$INITIAL_ADMIN_PASSWORD"
+export PGADMIN_ADMIN_PASSWORD="$PGADMIN_ADMIN_PASSWORD"
 
-    # Deploy Evolution API (cria o banco automaticamente)
-    print_info "Instalando Evolution API..."
-    docker stack deploy -c evolution/evolution.yaml evolution >/dev/null 2>&1
-    sleep 5
-    print_success "Evolution API instalado (banco será criado automaticamente)"
+# Deploy PostgreSQL
+print_info "Instalando PostgreSQL..."
+docker stack deploy -c postgres16/postgres.yaml postgres >/dev/null 2>&1
+sleep 10
+print_success "PostgreSQL instalado"
 
-    AUTO_DEPLOYED=true
-else
-    AUTO_DEPLOYED=false
-fi
+# Deploy Redis
+print_info "Instalando Redis..."
+docker stack deploy -c redis/redis.yaml redis >/dev/null 2>&1
+sleep 5
+print_success "Redis instalado"
+
+# Deploy n8n (com delay entre editor e demais)
+print_info "Instalando n8n Editor..."
+docker stack deploy -c n8n/queue/orq_editor.yaml n8n_editor >/dev/null 2>&1
+print_success "n8n Editor instalado"
+
+print_info "Aguardando 1 minuto para o Editor inicializar..."
+sleep 60
+
+print_info "Instalando n8n Webhook e Worker..."
+docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook >/dev/null 2>&1
+docker stack deploy -c n8n/queue/orq_worker.yaml n8n_worker >/dev/null 2>&1
+print_success "n8n completo instalado"
+
+# Deploy pgAdmin
+print_info "Instalando pgAdmin..."
+docker stack deploy -c pgadmin/pgadmin.yaml pgadmin >/dev/null 2>&1
+print_success "pgAdmin instalado"
+
+# Exportar variáveis do Evolution
+export EVOLUTION_API_KEY="$EVOLUTION_API_KEY"
+export EVOLUTION_DATABASE="$EVOLUTION_DATABASE"
+
+# Deploy Evolution API (cria o banco automaticamente)
+print_info "Instalando Evolution API..."
+docker stack deploy -c evolution/evolution.yaml evolution >/dev/null 2>&1
+sleep 5
+print_success "Evolution API instalado (banco será criado automaticamente)"
 
 # 9. Instalar ctop (opcional)
 if ! command -v docker-ctop >/dev/null 2>&1; then
@@ -453,8 +446,8 @@ print_success "Portainer resetado - você tem 5 minutos para acessar!"
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║         INSTALAÇÃO CONCLUÍDA!            ║"
-echo "║           Versão: 2025.07.17             ║"
-echo "║             Versão FINAL v4              ║"
+echo "║         Versão FINAL v5 - 2025           ║"
+echo "║         100% Automática + Evolution      ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 
@@ -535,37 +528,21 @@ echo "   🚨 Após 5 min, será necessário redeployar!"
 echo "   ✅ Portainer resetado - contador iniciado AGORA!"
 echo ""
 
-echo "DEBUG: Verificando AUTO_DEPLOYED: $AUTO_DEPLOYED"
-if [[ "$AUTO_DEPLOYED" == "true" ]]; then
-    echo "✅ APLICAÇÕES INSTALADAS AUTOMATICAMENTE:"
-    echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin + Evolution API"
-    echo ""
-    echo "2️⃣ CONFIGURE O DNS:"
-    echo "   fluxos.$DOMAIN → $SERVER_IP"
-    echo "   webhook.$DOMAIN → $SERVER_IP"
-    echo "   evo.$DOMAIN → $SERVER_IP"
-    echo "   traefik.$DOMAIN → $SERVER_IP (opcional)"
-    echo ""
-    echo "3️⃣ AGUARDE ~2 MINUTOS e acesse:"
-    echo "   https://fluxos.$DOMAIN"
-    echo ""
-    echo "4️⃣ MONITORE NO PORTAINER:"
-    echo "   Verifique se todos os serviços estão rodando"
-    echo "   Acompanhe logs e status dos containers"
-else
-    echo "🔧 DEPLOY MANUAL NECESSÁRIO:"
-    echo "   Use: ./deploy-api.sh (após configurar Portainer)"
-    echo ""
-    echo "2️⃣ CONFIGURE O DNS:"
-    echo "   fluxos.$DOMAIN → $SERVER_IP"
-    echo "   webhook.$DOMAIN → $SERVER_IP"
-    echo "   evo.$DOMAIN → $SERVER_IP"
-    echo "   traefik.$DOMAIN → $SERVER_IP (opcional)"
-    echo ""
-    echo "3️⃣ DEPLOY VIA API:"
-    echo "   ./deploy-api.sh"
-    echo "   (Script automatizado para deploy via API do Portainer)"
-fi
+echo "✅ APLICAÇÕES INSTALADAS AUTOMATICAMENTE:"
+echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin + Evolution API"
+echo ""
+echo "2️⃣ CONFIGURE O DNS:"
+echo "   fluxos.$DOMAIN → $SERVER_IP"
+echo "   webhook.$DOMAIN → $SERVER_IP"
+echo "   evo.$DOMAIN → $SERVER_IP"
+echo "   traefik.$DOMAIN → $SERVER_IP (opcional)"
+echo ""
+echo "3️⃣ AGUARDE ~2 MINUTOS e acesse:"
+echo "   https://fluxos.$DOMAIN"
+echo ""
+echo "4️⃣ MONITORE NO PORTAINER:"
+echo "   Verifique se todos os serviços estão rodando"
+echo "   Acompanhe logs e status dos containers"
 
 echo ""
 echo "🔑 ⚠️  CREDENCIAIS CRÍTICAS - SALVE ESTA INFORMAÇÃO! ⚠️"
