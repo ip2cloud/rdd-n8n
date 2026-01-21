@@ -1,0 +1,71 @@
+###############################################
+# COMANDOS DIRETOS - COPIE E COLE NO SERVIDOR
+###############################################
+
+# Execute linha por linha (ou todos juntos):
+
+# 1. Limpar imagens antigas
+docker image rm traefik:v3.6.1 traefik:v3.2 traefik:3.2.2 2>/dev/null || true
+
+# 2. Baixar Traefik 3.2.2
+docker pull traefik:3.2.2
+
+# 3. Forçar update do serviço
+docker service update --image traefik:3.2.2 --force traefik_traefik
+
+# 4. Aguardar e verificar logs (após 20 segundos)
+sleep 20 && docker service logs traefik_traefik --tail 30
+
+
+###############################################
+# O QUE VERIFICAR NOS LOGS:
+###############################################
+
+❌ NÃO deve aparecer: "client version 1.24 is too old"
+✅ DEVE aparecer: "Configuration loaded" ou "Server listening"
+
+
+###############################################
+# SE NÃO FUNCIONAR, TENTE RECREAR A STACK:
+###############################################
+
+# Pegar o DOMAIN do .env
+DOMAIN=$(grep -E "^DOMAIN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+TRAEFIK_ADMIN_HASH=$(grep -E "^TRAEFIK_ADMIN_HASH=" .env | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+
+# Remover stack
+docker stack rm traefik
+sleep 10
+
+# Limpar imagens
+docker image rm traefik:v3.6.1 traefik:v3.2 traefik:3.2.2 2>/dev/null || true
+docker image prune -f
+
+# Baixar imagem nova
+docker pull traefik:3.2.2
+
+# Recriar stack
+export DOMAIN="$DOMAIN"
+export TRAEFIK_ADMIN_HASH="$TRAEFIK_ADMIN_HASH"
+docker stack deploy -c traefik/traefik.yaml traefik --resolve-image always
+
+# Aguardar e verificar
+sleep 20 && docker service logs traefik_traefik --tail 30
+
+
+###############################################
+# VERIFICAR VERSÃO DA IMAGEM RODANDO:
+###############################################
+
+docker service inspect traefik_traefik --format='{{.Spec.TaskTemplate.ContainerSpec.Image}}'
+
+# Deve mostrar: traefik:3.2.2@sha256:...
+
+
+###############################################
+# VERIFICAR DOCKER ENGINE VERSION:
+###############################################
+
+docker version | grep -A5 "Server:"
+
+# API version deve ser 1.44 ou superior

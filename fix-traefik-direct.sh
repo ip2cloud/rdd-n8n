@@ -3,6 +3,7 @@
 ###################################
 # Script para Corrigir Traefik
 # Resolve erro de API Docker version
+# (Versão que lê .env com grep)
 ###################################
 
 set -e
@@ -26,7 +27,7 @@ echo ""
 
 # Verificar se é root
 if [[ $EUID -ne 0 ]]; then
-   print_error "Execute como root: sudo ./fix-traefik.sh"
+   print_error "Execute como root: sudo ./fix-traefik-direct.sh"
 fi
 
 # Verificar se .env existe
@@ -34,10 +35,16 @@ if [[ ! -f ".env" ]]; then
     print_error "Arquivo .env não encontrado!"
 fi
 
-# Carregar variáveis do .env
-source .env
+# Ler variáveis do .env com grep (evita problemas de sintaxe)
+DOMAIN=$(grep -E "^DOMAIN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+TRAEFIK_ADMIN_HASH=$(grep -E "^TRAEFIK_ADMIN_HASH=" .env | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+
+if [[ -z "$DOMAIN" ]]; then
+    print_error "DOMAIN não encontrado no .env"
+fi
 
 echo "🔧 Corrigindo problema de API Docker version..."
+echo "📍 Domínio: $DOMAIN"
 echo ""
 
 # 1. Remover stack do Traefik

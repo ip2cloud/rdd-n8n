@@ -1,0 +1,90 @@
+###############################################
+# FIX DEFINITIVO - TRAEFIK V3.3
+###############################################
+
+# EXECUTE ESTES COMANDOS NO SERVIDOR:
+
+# 1. Remover TODAS as imagens do Traefik
+docker image rm $(docker images traefik -q) -f 2>/dev/null || true
+docker image prune -af --filter "label=org.opencontainers.image.title=Traefik"
+
+# 2. Baixar Traefik v3.3 (versão que corrige o bug do Docker client)
+docker pull traefik:v3.3
+
+# 3. Verificar a imagem baixada
+docker images traefik
+
+# 4. Forçar update do serviço
+docker service update --image traefik:v3.3 --force traefik_traefik
+
+# 5. Aguardar 30 segundos
+sleep 30
+
+# 6. Verificar logs
+docker service logs traefik_traefik --tail 50
+
+
+###############################################
+# O QUE DEVE ACONTECER:
+###############################################
+
+✅ Traefik version v3.3.x nos logs
+✅ SEM erro "client version 1.24 is too old"
+✅ Mensagem "Configuration loaded from flags"
+✅ Sem erros de provider
+
+
+###############################################
+# SE AINDA NÃO FUNCIONAR - RECREAR STACK:
+###############################################
+
+# Pegar variáveis do .env
+DOMAIN=$(grep -E "^DOMAIN=" .env | cut -d'=' -f2 | tr -d '"' | tr -d "'")
+TRAEFIK_ADMIN_HASH=$(grep -E "^TRAEFIK_ADMIN_HASH=" .env | cut -d'=' -f2- | tr -d '"' | tr -d "'")
+
+# Remover stack completamente
+docker stack rm traefik
+sleep 10
+
+# Limpar TODAS as imagens Traefik
+docker image rm $(docker images traefik -q) -f 2>/dev/null || true
+
+# Baixar v3.3
+docker pull traefik:v3.3
+
+# Recriar stack
+export DOMAIN="$DOMAIN"
+export TRAEFIK_ADMIN_HASH="$TRAEFIK_ADMIN_HASH"
+docker stack deploy -c traefik/traefik.yaml traefik --resolve-image always
+
+# Aguardar e verificar
+sleep 30
+docker service logs traefik_traefik --tail 50
+docker service ps traefik_traefik
+
+
+###############################################
+# VERIFICAR VERSÃO RODANDO:
+###############################################
+
+docker service inspect traefik_traefik --format='{{.Spec.TaskTemplate.ContainerSpec.Image}}'
+
+# Deve mostrar: traefik:v3.3@sha256:...
+
+
+###############################################
+# ALTERNATIVA - SE v3.3 NÃO EXISTIR:
+###############################################
+
+# Usar a última versão stable:
+docker pull traefik:latest
+docker service update --image traefik:latest --force traefik_traefik
+
+
+###############################################
+# VERIFICAR DOCKER ENGINE NO HOST:
+###############################################
+
+docker version
+
+# Certifique-se que API version é 1.44 ou superior

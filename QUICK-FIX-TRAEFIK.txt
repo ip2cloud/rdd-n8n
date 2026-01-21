@@ -1,0 +1,52 @@
+###############################################
+# CORREÇÃO RÁPIDA PARA ERRO DE API DO DOCKER
+###############################################
+
+Execute ESTES comandos no servidor (em ordem):
+
+# 1. Carregar variáveis do .env
+source .env
+
+# 2. Remover imagens antigas do Traefik em cache
+docker image rm traefik:v3.6.1 traefik:v3.2 traefik:3.2.2 2>/dev/null || true
+
+# 3. Baixar imagem correta do zero
+docker pull traefik:3.2.2
+
+# 4. Forçar update do serviço com nova imagem
+docker service update --image traefik:3.2.2 --force traefik_traefik
+
+# 5. Aguardar 10 segundos e verificar logs
+sleep 10 && docker service logs traefik_traefik --tail 30
+
+
+###############################################
+# OU EXECUTE O SCRIPT AUTOMATIZADO:
+###############################################
+
+sudo ./fix-traefik.sh
+
+
+###############################################
+# O QUE DEVE ACONTECER:
+###############################################
+
+✓ Logs NÃO devem mostrar mais "client version 1.24 is too old"
+✓ Logs devem mostrar "Configuration loaded" ou similar
+✓ Páginas devem parar de dar 404
+✓ HTTPS deve funcionar em todos os domínios
+
+
+###############################################
+# SE AINDA HOUVER PROBLEMAS:
+###############################################
+
+# Verificar versão da imagem rodando:
+docker service inspect traefik_traefik --format='{{.Spec.TaskTemplate.ContainerSpec.Image}}'
+
+# Deve mostrar: traefik:3.2.2@sha256:...
+
+# Verificar versão do Docker Engine no host:
+docker version
+
+# Deve mostrar API version 1.44 ou superior

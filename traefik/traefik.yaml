@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   traefik:
-    image: traefik:v3.2
+    image: traefik:v3.6.7
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
     command:
       # Habilitar API e Dashboard
@@ -12,6 +12,7 @@ services:
       - "--providers.swarm.endpoint=unix:///var/run/docker.sock"
       - "--providers.swarm.exposedbydefault=false"
       - "--providers.swarm.network=network_swarm_public"
+      - "--providers.swarm.httpClientTimeout=300s"
       # Configurar entrypoints
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
