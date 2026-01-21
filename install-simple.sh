@@ -167,7 +167,7 @@ EVOLUTION_API_KEY=$(openssl rand -hex 16 | tr -d '\n')
 print_info "API Key Evolution gerada: $EVOLUTION_API_KEY"
 
 # Nome do banco Evolution
-EVOLUTION_DATABASE="${DATABASE}_evolution"
+EVOLUTION_DATABASE="bravo_evolution"
 
 # Função para envio seguro de credenciais via API
 send_credentials_email() {
@@ -410,15 +410,34 @@ print_info "Instalando pgAdmin..."
 docker stack deploy -c pgadmin/pgadmin.yaml pgadmin >/dev/null 2>&1
 print_success "pgAdmin instalado"
 
+# Aguardar PostgreSQL estar completamente pronto
+print_info "Aguardando PostgreSQL estar pronto..."
+sleep 10
+
+# Criar banco de dados do Evolution API
+print_info "Criando banco de dados ${EVOLUTION_DATABASE}..."
+POSTGRES_CONTAINER=$(docker ps -q -f name=postgres_postgres | head -n1)
+if [[ -n "$POSTGRES_CONTAINER" ]]; then
+    docker exec -i $POSTGRES_CONTAINER psql -U postgres -c "CREATE DATABASE ${EVOLUTION_DATABASE};" 2>/dev/null || \
+    docker exec -i $POSTGRES_CONTAINER psql -U postgres -c "SELECT 1 FROM pg_database WHERE datname='${EVOLUTION_DATABASE}';" | grep -q 1 && \
+    print_success "Banco ${EVOLUTION_DATABASE} criado/verificado" || \
+    print_info "Aguardando PostgreSQL... (tentando novamente em 5s)"
+    sleep 5
+    docker exec -i $POSTGRES_CONTAINER psql -U postgres -c "CREATE DATABASE ${EVOLUTION_DATABASE};" 2>/dev/null || true
+    print_success "Banco ${EVOLUTION_DATABASE} configurado"
+else
+    print_info "PostgreSQL ainda não está disponível - Evolution criará o banco na primeira conexão"
+fi
+
 # Exportar variáveis do Evolution
 export EVOLUTION_API_KEY="$EVOLUTION_API_KEY"
 export EVOLUTION_DATABASE="$EVOLUTION_DATABASE"
 
-# Deploy Evolution API (cria o banco automaticamente)
+# Deploy Evolution API
 print_info "Instalando Evolution API..."
 docker stack deploy -c evolution/evolution.yaml evolution >/dev/null 2>&1
 sleep 5
-print_success "Evolution API instalado (banco será criado automaticamente)"
+print_success "Evolution API instalado"
 
 # 9. Instalar ctop (opcional)
 if ! command -v docker-ctop >/dev/null 2>&1; then

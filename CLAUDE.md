@@ -37,7 +37,8 @@ The project uses a **fully automated approach** with optional email integration:
 - `debug.sh` - Comprehensive diagnostic script
 - `cleanup.sh` - Quick cleanup (remove stacks, clean system)
 - `uninstall.sh` - Complete uninstallation with data removal (includes pgAdmin)
-- `create-database.sh` - Manual database creation utility (if needed)
+- `create-database.sh` - Manual n8n database creation utility (if needed)
+- `create-evolution-database.sh` - Manual Evolution database creation utility (if needed)
 
 ### Configuration Templates
 - `smtp.conf.example` - SMTP configuration template
@@ -94,7 +95,7 @@ TRAEFIK_ADMIN_PASSWORD=generated_password
 TRAEFIK_ADMIN_HASH=generated_hash
 PGADMIN_ADMIN_PASSWORD=generated_password
 EVOLUTION_API_KEY=generated_key
-EVOLUTION_DATABASE=n8n_evolution
+EVOLUTION_DATABASE=bravo_evolution
 EVOLUTION_URL=https://evo.user-domain.com
 EDITOR_URL=https://fluxos.user-domain.com
 WEBHOOK_URL=https://webhook.user-domain.com
@@ -311,11 +312,11 @@ sudo ./install-simple.sh  # Just run installer again
 
 ### Evolution API Integration
 - **Version**: v2.3.6 (evoapicloud/evolution-api)
-- **Database**: Dedicated PostgreSQL database (`{DATABASE}_evolution`) - auto-created on first run
+- **Database**: Dedicated PostgreSQL database (`bravo_evolution`) - created during installation
 - **Cache**: Redis database index 6 (shared with n8n)
 - **Authentication**: API Key auto-generated during installation
 - **Storage**: Dedicated volume for WhatsApp instances and media
 - **Features**: WhatsApp Multi-Device, Chatwoot integration, OpenAI support
 - **Documentation**: https://doc.evolution-api.com/
 - **Integration**: Can be connected to n8n workflows via HTTP Request node
-- **Note**: Evolution API automatically creates its database on first startup
+- **Note**: Installation script creates the database before deploying Evolution API

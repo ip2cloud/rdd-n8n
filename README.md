@@ -200,13 +200,21 @@ sudo ./uninstall.sh
 - Remove redes overlay
 - Mantém backup do `.env`
 
-### Criação Manual do Banco (se necessário)
+### Criação Manual do Banco n8n (se necessário)
 ```bash
 ./create-database.sh
 ```
 - Cria o banco n8n manualmente se não foi criado automaticamente
 - Conecta no PostgreSQL e executa CREATE DATABASE
 - Útil para resolver erro "database does not exist"
+
+### Criação Manual do Banco Evolution (se necessário)
+```bash
+./create-evolution-database.sh
+```
+- Cria o banco do Evolution API manualmente
+- Verifica se o banco já existe antes de criar
+- Útil se Evolution API apresentar erro "database does not exist"
 
 ---
 
@@ -224,6 +232,10 @@ INITIAL_ADMIN_EMAIL=seu@email.com
 INITIAL_ADMIN_PASSWORD=senha_gerada_automaticamente
 TRAEFIK_ADMIN_PASSWORD=senha_gerada_automaticamente
 TRAEFIK_ADMIN_HASH=hash_gerado_automaticamente
+PGADMIN_ADMIN_PASSWORD=senha_gerada_automaticamente
+EVOLUTION_API_KEY=chave_gerada_automaticamente
+EVOLUTION_DATABASE=bravo_evolution
+EVOLUTION_URL=https://evo.seu-dominio.com
 EDITOR_URL=https://fluxos.seu-dominio.com
 WEBHOOK_URL=https://webhook.seu-dominio.com
 ```
@@ -280,8 +292,11 @@ docker service logs n8n_editor_n8n
 
 ### Erro "database does not exist"?
 ```bash
-# Criar banco manualmente se necessário
+# Criar banco n8n manualmente
 ./create-database.sh
+
+# Criar banco Evolution API manualmente
+./create-evolution-database.sh
 ```
 
 ### Portainer não acessa?
