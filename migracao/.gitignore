@@ -1,0 +1,12 @@
+# Backups
+backup_*/
+
+# Logs
+*.log
+
+# Referências internas
+ultimo_backup.txt
+
+# Arquivos temporários
+*.bak
+*.tmp
