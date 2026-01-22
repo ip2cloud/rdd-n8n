@@ -1,0 +1,81 @@
+╔════════════════════════════════════════════════════════════════════╗
+║                                                                    ║
+║                    ⚠️  NOTA IMPORTANTE ⚠️                         ║
+║                                                                    ║
+╚════════════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔧 SE DER ERRO "cannot execute: required file not found"
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Isso significa que os arquivos têm line endings do Windows (CRLF).
+
+SOLUÇÃO RÁPIDA:
+───────────────
+
+Execute estes comandos para corrigir:
+
+# Corrigir line endings
+sed -i 's/\r$//' migrate.sh
+sed -i 's/\r$//' restaurar.sh
+
+# Dar permissão de execução
+chmod +x migrate.sh
+chmod +x restaurar.sh
+
+# Agora execute normalmente
+./migrate.sh
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+💡 PREVENÇÃO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Se você estiver transferindo os arquivos do Windows para Linux:
+
+OPÇÃO 1: Usar ferramenta dos2unix
+   dos2unix migrate.sh restaurar.sh
+
+OPÇÃO 2: Usar sed (como acima)
+   sed -i 's/\r$//' *.sh
+
+OPÇÃO 3: Transferir usando Git
+   Git automaticamente converte os line endings
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📦 COMPACTANDO CORRETAMENTE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Se for compactar em Windows para enviar para Linux:
+
+1. Use Git Bash ou WSL para compactar:
+   tar -czf migracao.tar.gz migracao/
+
+2. Ou use WinRAR/7-Zip com opções Unix
+
+3. Ou use ferramenta online de conversão
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ VERIFICAR SE ESTÁ OK
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Para verificar se os arquivos estão com line endings corretos:
+
+# Ver tipo do arquivo
+file migrate.sh
+
+# Deve mostrar:
+# "Bourne-Again shell script, ASCII text executable"
+
+# Não deve mostrar:
+# "with CRLF line terminators" ❌
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Esta nota pode ser deletada após corrigir o problema.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
