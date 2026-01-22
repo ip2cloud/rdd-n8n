@@ -17,26 +17,28 @@ sudo ./migrate.sh
 
 ---
 
-## 📋 Arquivos Disponíveis
+## 📋 Arquivos do Pacote
 
 | Arquivo | Descrição | Para Quem |
 |---------|-----------|-----------|
-| **COMECE-AQUI.txt** | Guia visual de 3 passos | 👥 Leigos |
-| **LEIA-ME.txt** | Manual completo em português | 👥 Leigos |
-| **migrate.sh** | Script de migração automática | ✅ TODOS |
-| **restaurar.sh** | Restaurar versão anterior | ✅ TODOS |
-| **README.md** | Este arquivo | 🔧 Técnicos |
+| **migrate.sh** | Script de migração automática v1.x → v2.4.3 | ✅ TODOS |
+| **restaurar.sh** | Script de restauração (rollback) | ✅ TODOS |
+| **COMECE-AQUI.txt** | Guia visual de 3 passos | 👥 Usuários |
+| **LEIA-ME.txt** | Manual completo em português | 👥 Usuários |
+| **README.md** | Documentação técnica (este arquivo) | 🔧 Técnicos |
 
 ---
 
 ## 🎯 O Que Cada Script Faz?
 
 ### `migrate.sh` (Principal)
-- ✅ Backup automático completo
-- ✅ Atualização para v2.4.3
-- ✅ Verificação de funcionamento
-- ✅ Restauração automática se houver erro
-- ⏱️ Tempo: 5-8 minutos
+- ✅ Backup automático completo (banco + arquivos + .env)
+- ✅ Atualização inteligente de variáveis de ambiente
+- ✅ Limpeza de migrações problemáticas do banco
+- ✅ Migração em 2 etapas seguras (v1.x → v2.0.0 → v2.4.3)
+- ✅ Validação de cada serviço após atualização
+- ✅ Detecção e restauração automática em caso de erro
+- ⏱️ Tempo: 8-12 minutos
 
 ### `restaurar.sh` (Rollback)
 - 🔄 Restaura versão anterior
@@ -76,8 +78,8 @@ sudo ./migrate.sh
 - ✅ Conexão com internet
 
 ### Downtime Esperado
-- ⏸️ **3-5 minutos** de indisponibilidade do n8n
-- ⏱️ **5-8 minutos** de processo total
+- ⏸️ **~5 minutos** de indisponibilidade do n8n
+- ⏱️ **8-12 minutos** de processo total (migração em 2 etapas)
 
 ### O Que é Preservado
 - ✅ Todos os workflows
@@ -85,6 +87,28 @@ sudo ./migrate.sh
 - ✅ Todas as execuções
 - ✅ Todas as configurações
 - ✅ Dados do banco de dados
+
+### Variáveis de Ambiente Atualizadas
+O script atualiza automaticamente o arquivo `.env`:
+
+**Removidas (obsoletas na v2.x):**
+- ❌ `N8N_CONFIG_FILES`
+- ❌ `QUEUE_WORKER_MAX_STALLED_COUNT`
+
+**Adicionadas (necessárias para v2.x):**
+- ✅ `N8N_SECURE_COOKIE=true`
+- ✅ `N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true` (obrigatório)
+- ✅ `N8N_RUNNERS_ENABLED=true`
+- ✅ `N8N_RUNNERS_MODE=internal`
+- ✅ `N8N_BLOCK_ENV_ACCESS_IN_NODE=false`
+- ✅ `N8N_SKIP_AUTH_ON_OAUTH_CALLBACK=false`
+- ✅ `NODE_EXCLUDE="[]"`
+- ✅ `N8N_GIT_NODE_DISABLE_BARE_REPOS=true`
+- ✅ `EXECUTIONS_DATA_PRUNE=true`
+- ✅ `EXECUTIONS_DATA_MAX_AGE=336` (14 dias)
+- ✅ `N8N_LOG_LEVEL=info`
+
+**Importante:** O script verifica se cada variável já existe antes de adicionar, respeitando personalizações existentes.
 
 ### Backups Criados
 - 📦 Banco de dados PostgreSQL (SQL dump)
@@ -112,22 +136,26 @@ sudo ./restaurar.sh
 
 ---
 
-## 📊 Estrutura Após Migração
+## 📊 Estrutura do Pacote
 
 ```
 migracao/
-├── COMECE-AQUI.txt           ← Leia primeiro!
-├── LEIA-ME.txt               ← Manual completo
-├── migrate.sh                ← Execute este!
-├── restaurar.sh              ← Restauração
-├── README.md                 ← Este arquivo
-├── backup_YYYYMMDD_HHMMSS/   ← Criado automaticamente
-│   ├── database.sql
-│   ├── orq_editor.yaml
-│   ├── orq_webhook.yaml
-│   ├── orq_worker.yaml
-│   └── .env
-└── migracao_YYYYMMDD_HHMMSS.log  ← Log (criado automaticamente)
+├── migrate.sh                     ← Script principal (EXECUTE ESTE!)
+├── restaurar.sh                   ← Script de restauração (rollback)
+├── COMECE-AQUI.txt               ← Guia visual de 3 passos
+├── LEIA-ME.txt                   ← Manual completo em português
+└── README.md                     ← Este arquivo (documentação técnica)
+
+Após executar migrate.sh, serão criados:
+├── backup_YYYYMMDD_HHMMSS/       ← Backup completo
+│   ├── database.sql              (dump do PostgreSQL)
+│   ├── orq_editor.yaml           (config do Editor)
+│   ├── orq_webhook.yaml          (config do Webhook)
+│   ├── orq_worker.yaml           (config do Worker)
+│   ├── .env                      (variáveis originais)
+│   └── .env.backup               (backup antes de modificar)
+├── migracao_YYYYMMDD_HHMMSS.log  ← Log completo da migração
+└── ultimo_backup.txt             ← Referência para restaurar.sh
 ```
 
 ---

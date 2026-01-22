@@ -107,6 +107,107 @@ restaurar_backup() {
     echo ""
 }
 
+# Função para atualizar variáveis de ambiente para v2.x
+atualizar_variaveis_env() {
+    echo -e "${BLUE}⚙️  Atualizando variáveis de ambiente para v2.x...${NC}"
+    echo ""
+
+    # Fazer backup do .env
+    cp .env "$BACKUP_DIR/.env.backup"
+    log "Backup do .env criado"
+
+    # Contadores
+    local REMOVIDAS=0
+    local ADICIONADAS=0
+    local JA_EXISTENTES=0
+
+    # Variáveis obsoletas que devem ser removidas na v2.x
+    VARS_OBSOLETAS=(
+        "N8N_CONFIG_FILES"
+        "QUEUE_WORKER_MAX_STALLED_COUNT"
+    )
+
+    # Remover variáveis obsoletas
+    echo -e "   ${BLUE}🗑️  Verificando variáveis obsoletas...${NC}"
+    for VAR in "${VARS_OBSOLETAS[@]}"; do
+        if grep -q "^${VAR}=" .env 2>/dev/null; then
+            echo -e "      ${YELLOW}⚠️  Removendo: ${VAR}${NC}"
+            sed -i.bak "/^${VAR}=/d" .env
+            log "Variável obsoleta removida: $VAR"
+            ((REMOVIDAS++))
+        fi
+    done
+
+    if [ $REMOVIDAS -eq 0 ]; then
+        echo -e "      ${GREEN}✓ Nenhuma variável obsoleta encontrada${NC}"
+    else
+        echo -e "      ${GREEN}✓ ${REMOVIDAS} variável(is) obsoleta(s) removida(s)${NC}"
+    fi
+
+    # Adicionar/atualizar variáveis necessárias para v2.x
+    echo ""
+    echo -e "   ${BLUE}➕ Verificando variáveis necessárias para v2.x...${NC}"
+
+    # Array com todas as variáveis v2.x
+    declare -A VARS_V2X=(
+        ["N8N_SECURE_COOKIE"]="true"
+        ["N8N_GIT_NODE_DISABLE_BARE_REPOS"]="true"
+        ["EXECUTIONS_DATA_PRUNE"]="true"
+        ["EXECUTIONS_DATA_MAX_AGE"]="336"
+        ["N8N_LOG_LEVEL"]="info"
+        ["N8N_BLOCK_ENV_ACCESS_IN_NODE"]="false"
+        ["N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS"]="true"
+        ["N8N_RUNNERS_ENABLED"]="true"
+        ["N8N_RUNNERS_MODE"]="internal"
+        ["NODE_EXCLUDE"]='"[]"'
+        ["N8N_SKIP_AUTH_ON_OAUTH_CALLBACK"]="false"
+    )
+
+    # Adicionar seção de comentário se não existir
+    if ! grep -q "# Configurações de segurança v2.x" .env 2>/dev/null; then
+        echo "" >> .env
+        echo "# Configurações de segurança v2.x" >> .env
+    fi
+
+    # Verificar e adicionar cada variável
+    for VAR_NAME in "${!VARS_V2X[@]}"; do
+        VAR_VALUE="${VARS_V2X[$VAR_NAME]}"
+
+        if grep -q "^${VAR_NAME}=" .env 2>/dev/null; then
+            # Variável já existe
+            VALOR_ATUAL=$(grep "^${VAR_NAME}=" .env | cut -d'=' -f2-)
+            echo -e "      ${BLUE}ℹ️  ${VAR_NAME} já existe (valor: ${VALOR_ATUAL})${NC}"
+            ((JA_EXISTENTES++))
+            log "Variável já existe: ${VAR_NAME}=${VALOR_ATUAL}"
+        else
+            # Adicionar variável
+            echo "${VAR_NAME}=${VAR_VALUE}" >> .env
+            echo -e "      ${GREEN}✅ Adicionada: ${VAR_NAME}=${VAR_VALUE}${NC}"
+            log "Variável adicionada: ${VAR_NAME}=${VAR_VALUE}"
+            ((ADICIONADAS++))
+        fi
+    done
+
+    # Adicionar seção de execução se necessário
+    if ! grep -q "# Configurações de segurança e execução v2.x" .env 2>/dev/null; then
+        if [ $ADICIONADAS -gt 5 ]; then
+            echo "" >> .env
+            echo "# Configurações de segurança e execução v2.x" >> .env
+        fi
+    fi
+
+    echo ""
+    echo -e "${GREEN}   ✅ Verificação de variáveis concluída!${NC}"
+    echo ""
+    echo -e "   ${BLUE}📊 RESUMO:${NC}"
+    echo -e "      ${YELLOW}🗑️  Removidas: ${REMOVIDAS}${NC}"
+    echo -e "      ${GREEN}✅ Adicionadas: ${ADICIONADAS}${NC}"
+    echo -e "      ${BLUE}ℹ️  Já existiam: ${JA_EXISTENTES}${NC}"
+    echo -e "      ${PURPLE}📦 Total v2.x: 11 variáveis${NC}"
+
+    log "Atualização de variáveis - Removidas: $REMOVIDAS, Adicionadas: $ADICIONADAS, Já existentes: $JA_EXISTENTES"
+}
+
 # Função para limpar migrações problemáticas
 limpar_migracoes_problematicas() {
     echo -e "${BLUE}🧹 Verificando migrações problemáticas no banco de dados...${NC}"
@@ -185,12 +286,14 @@ echo -e "${GREEN}Este script vai atualizar seu n8n de forma AUTOMÁTICA e SEGURA
 echo ""
 echo "O que será feito:"
 echo "  1. ✅ Backup completo (banco de dados + configurações)"
-echo "  2. ✅ Atualização para n8n v2.4.3"
-echo "  3. ✅ Verificação de funcionamento"
-echo "  4. ✅ Restauração automática se algo der errado"
+echo "  2. ✅ Atualização de variáveis de ambiente para v2.x"
+echo "  3. ✅ Limpeza de migrações problemáticas do banco"
+echo "  4. ✅ Atualização em 2 etapas (v1.x → v2.0.0 → v2.4.3)"
+echo "  5. ✅ Verificação de funcionamento em cada etapa"
+echo "  6. ✅ Restauração automática se algo der errado"
 echo ""
-echo -e "${YELLOW}⏱️  Tempo estimado: 5-8 minutos${NC}"
-echo -e "${YELLOW}⏸️  Downtime: ~3 minutos (n8n ficará offline)${NC}"
+echo -e "${YELLOW}⏱️  Tempo estimado: 8-12 minutos${NC}"
+echo -e "${YELLOW}⏸️  Downtime: ~5 minutos (n8n ficará offline)${NC}"
 echo ""
 
 log "===== INÍCIO DA MIGRAÇÃO PARA N8N v${NOVA_VERSAO} ====="
@@ -348,16 +451,35 @@ log "ETAPA 1: Backups concluídos com sucesso"
 pausar
 
 ###############################################################################
-# ETAPA 2: VALIDAR IMAGEM DOCKER
+# ETAPA 2: ATUALIZAR VARIÁVEIS DE AMBIENTE
 ###############################################################################
 
 clear
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║         🔍 ETAPA 2/5: Validando Nova Versão               ║${NC}"
+echo -e "${BLUE}║      ⚙️  ETAPA 2/6: Atualizando Variáveis de Ambiente     ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-log "ETAPA 2: Validando imagem Docker"
+log "ETAPA 2: Atualizando variáveis de ambiente"
+
+atualizar_variaveis_env
+
+# Recarregar variáveis atualizadas
+source .env
+
+pausar
+
+###############################################################################
+# ETAPA 3: VALIDAR IMAGEM DOCKER
+###############################################################################
+
+clear
+echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
+echo -e "${BLUE}║         🔍 ETAPA 3/6: Validando Nova Versão               ║${NC}"
+echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
+echo ""
+
+log "ETAPA 3: Validando imagem Docker"
 
 echo -e "${BLUE}🔍 Verificando se a versão ${NOVA_VERSAO} está disponível...${NC}"
 
@@ -386,7 +508,7 @@ limpar_migracoes_problematicas
 pausar
 
 ###############################################################################
-# ETAPA 3: ATUALIZAR ARQUIVOS
+# ETAPA 4: ATUALIZAR ARQUIVOS
 ###############################################################################
 
 atualizar_arquivos_yaml() {
@@ -414,11 +536,11 @@ atualizar_arquivos_yaml() {
 
 clear
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║       ⚙️  ETAPA 3/5: Atualizando Configurações            ║${NC}"
+echo -e "${BLUE}║       ⚙️  ETAPA 4/6: Atualizando Configurações            ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-log "ETAPA 3: Atualizando arquivos de configuração"
+log "ETAPA 4: Atualizando arquivos de configuração"
 
 if [ "$MIGRACAO_EM_ETAPAS" = true ]; then
     echo -e "${YELLOW}📋 Migração em 2 etapas (mais seguro):${NC}"
@@ -435,12 +557,12 @@ else
     atualizar_arquivos_yaml "$NOVA_VERSAO"
 fi
 
-log "ETAPA 3: Arquivos de configuração atualizados"
+log "ETAPA 4: Arquivos de configuração atualizados"
 
 pausar
 
 ###############################################################################
-# ETAPA 4: ATUALIZAR N8N
+# ETAPA 5: ATUALIZAR N8N
 ###############################################################################
 
 realizar_atualizacao_servicos() {
@@ -453,8 +575,13 @@ realizar_atualizacao_servicos() {
     echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
     echo ""
 
-    # Exportar variáveis
+    # Exportar variáveis básicas
     export DOMAIN DATABASE DATABASE_PASSWORD N8N_ENCRYPTION_KEY INITIAL_ADMIN_EMAIL INITIAL_ADMIN_PASSWORD
+
+    # Exportar variáveis v2.x
+    export N8N_SECURE_COOKIE N8N_GIT_NODE_DISABLE_BARE_REPOS EXECUTIONS_DATA_PRUNE EXECUTIONS_DATA_MAX_AGE N8N_LOG_LEVEL
+    export N8N_BLOCK_ENV_ACCESS_IN_NODE N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS
+    export N8N_RUNNERS_ENABLED N8N_RUNNERS_MODE NODE_EXCLUDE N8N_SKIP_AUTH_ON_OAUTH_CALLBACK
 
     echo -e "${BLUE}🔄 Atualizando serviços para v${VERSAO}...${NC}"
     echo ""
@@ -480,11 +607,11 @@ realizar_atualizacao_servicos() {
 
 clear
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║          🚀 ETAPA 4/5: Instalando Nova Versão             ║${NC}"
+echo -e "${BLUE}║          🚀 ETAPA 5/6: Instalando Nova Versão             ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-log "ETAPA 4: Iniciando atualização dos serviços n8n"
+log "ETAPA 5: Iniciando atualização dos serviços n8n"
 
 if [ "$MIGRACAO_EM_ETAPAS" = true ]; then
     echo -e "${YELLOW}⚠️  O n8n ficará offline durante esta etapa (~5 minutos)${NC}"
@@ -538,21 +665,21 @@ fi
 
 echo ""
 echo -e "${GREEN}✅ ATUALIZAÇÃO DOS SERVIÇOS CONCLUÍDA!${NC}"
-log "ETAPA 4: Atualização dos serviços concluída"
+log "ETAPA 5: Atualização dos serviços concluída"
 
 pausar
 
 ###############################################################################
-# ETAPA 5: VERIFICAR FUNCIONAMENTO
+# ETAPA 6: VERIFICAR FUNCIONAMENTO
 ###############################################################################
 
 clear
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${BLUE}║         ✅ ETAPA 5/5: Verificando Instalação               ║${NC}"
+echo -e "${BLUE}║         ✅ ETAPA 6/6: Verificando Instalação               ║${NC}"
 echo -e "${BLUE}╚════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-log "ETAPA 5: Verificando funcionamento dos serviços"
+log "ETAPA 6: Verificando funcionamento dos serviços"
 
 echo -e "${BLUE}🔍 Verificando status dos serviços...${NC}"
 echo ""
@@ -586,7 +713,7 @@ if echo "$LOGS_EDITOR" | grep -qi "error.*migration\|migration.*failed"; then
 fi
 
 echo -e "${GREEN}✅ VERIFICAÇÃO CONCLUÍDA!${NC}"
-log "ETAPA 5: Verificação concluída com sucesso"
+log "ETAPA 6: Verificação concluída com sucesso"
 
 pausar
 
