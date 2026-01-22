@@ -6,7 +6,9 @@
 #                                                                             #
 #  Este script faz TUDO automaticamente:                                     #
 #  ✅ Cria backup completo                                                    #
-#  ✅ Atualiza para n8n v2.4.3                                                #
+#  ✅ Limpa migrações problemáticas do banco                                  #
+#  ✅ Atualiza em 2 etapas seguras (v1.x → v2.0.0 → v2.4.3)                  #
+#  ✅ Verifica cada etapa antes de continuar                                  #
 #  ✅ Restaura automaticamente se algo der errado                             #
 #                                                                             #
 #  COMO USAR: sudo ./migrate.sh                                              #
@@ -24,8 +26,10 @@ BLUE='\033[0;34m'
 PURPLE='\033[0;35m'
 NC='\033[0m'
 
-# Versão alvo
+# Versões para migração em etapas
+VERSAO_INTERMEDIARIA="2.0.0"
 NOVA_VERSAO="2.4.3"
+MIGRACAO_EM_ETAPAS=true  # true = mais seguro (2 etapas), false = direto para 2.4.3
 
 # Diretórios
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -101,6 +105,72 @@ restaurar_backup() {
 
     echo -e "${GREEN}✅ Sistema restaurado para versão anterior${NC}"
     echo ""
+}
+
+# Função para limpar migrações problemáticas
+limpar_migracoes_problematicas() {
+    echo -e "${BLUE}🧹 Verificando migrações problemáticas no banco de dados...${NC}"
+
+    POSTGRES_CONTAINER=$(docker ps -qf name=postgres | head -1)
+
+    if [ -z "$POSTGRES_CONTAINER" ]; then
+        echo -e "${YELLOW}⚠️  Container PostgreSQL não encontrado, pulando limpeza${NC}"
+        return
+    fi
+
+    # Lista de migrações problemáticas conhecidas que causam erro "already exists"
+    MIGRACOES_PROBLEMATICAS=(
+        "AddWorkflowDescriptionColumn1762177736257"
+        "AddWorkflowMetadata1"
+    )
+
+    for MIGRACAO in "${MIGRACOES_PROBLEMATICAS[@]}"; do
+        EXISTE=$(docker exec "$POSTGRES_CONTAINER" psql -U postgres -d "$DATABASE" -tAc "SELECT COUNT(*) FROM migrations WHERE name = '$MIGRACAO';" 2>/dev/null)
+
+        if [ "$EXISTE" = "1" ]; then
+            echo -e "${YELLOW}   ⚠️  Removendo migração problemática: $MIGRACAO${NC}"
+            docker exec "$POSTGRES_CONTAINER" psql -U postgres -d "$DATABASE" -c "DELETE FROM migrations WHERE name = '$MIGRACAO';" >/dev/null 2>&1
+            log "Migração problemática removida: $MIGRACAO"
+        fi
+    done
+
+    echo -e "${GREEN}   ✅ Verificação de migrações concluída${NC}"
+    log "Limpeza de migrações problemáticas concluída"
+}
+
+# Função para atualizar serviço n8n
+atualizar_servico_n8n() {
+    local NOME_SERVICO=$1
+    local ARQUIVO_YAML=$2
+    local VERSAO=$3
+    local TEMPO_ESPERA=$4
+
+    echo -e "   🔄 Atualizando ${NOME_SERVICO}..."
+    echo -e "${YELLOW}      ⏳ Aguarde ~${TEMPO_ESPERA} segundos...${NC}"
+
+    if docker stack deploy -c "$ARQUIVO_YAML" "$NOME_SERVICO" >/dev/null 2>&1; then
+        sleep "$TEMPO_ESPERA"
+
+        # Verificar se o serviço subiu corretamente
+        REPLICAS=$(docker service ls --filter "name=${NOME_SERVICO}" --format "{{.Replicas}}" 2>/dev/null | head -1)
+
+        if echo "$REPLICAS" | grep -q "0/"; then
+            erro_fatal "${NOME_SERVICO} não iniciou corretamente.\n   Verifique os logs: docker service logs ${NOME_SERVICO}"
+        fi
+
+        # Verificar versão instalada
+        VERSAO_INSTALADA=$(docker service ls --format "{{.Name}} {{.Image}}" 2>/dev/null | grep "$NOME_SERVICO" | head -1 | awk '{print $2}' | sed 's/.*://')
+
+        if [ "$VERSAO_INSTALADA" != "$VERSAO" ]; then
+            erro_fatal "${NOME_SERVICO} não atualizou para versão $VERSAO.\n   Versão atual: $VERSAO_INSTALADA"
+        fi
+
+        echo -e "${GREEN}      ✅ ${NOME_SERVICO} atualizado para v${VERSAO}${NC}"
+        log "${NOME_SERVICO} atualizado com sucesso para v${VERSAO}"
+        return 0
+    else
+        erro_fatal "Falha ao atualizar ${NOME_SERVICO}"
+    fi
 }
 
 clear
@@ -298,11 +368,49 @@ else
     erro_fatal "Versão ${NOVA_VERSAO} não encontrada no Docker Hub.\n   Verifique sua conexão com a internet."
 fi
 
+# Se migração em etapas, validar versão intermediária também
+if [ "$MIGRACAO_EM_ETAPAS" = true ]; then
+    echo ""
+    echo -e "${BLUE}🔍 Verificando versão intermediária ${VERSAO_INTERMEDIARIA}...${NC}"
+    if docker manifest inspect "n8nio/n8n:${VERSAO_INTERMEDIARIA}" >/dev/null 2>&1; then
+        echo -e "${GREEN}✅ Versão ${VERSAO_INTERMEDIARIA} encontrada${NC}"
+        log "Imagem n8nio/n8n:${VERSAO_INTERMEDIARIA} validada"
+    else
+        erro_fatal "Versão intermediária ${VERSAO_INTERMEDIARIA} não encontrada.\n   Verifique sua conexão com a internet."
+    fi
+fi
+
+echo ""
+limpar_migracoes_problematicas
+
 pausar
 
 ###############################################################################
 # ETAPA 3: ATUALIZAR ARQUIVOS
 ###############################################################################
+
+atualizar_arquivos_yaml() {
+    local VERSAO=$1
+
+    echo -e "${BLUE}📝 Atualizando arquivos para versão ${VERSAO}...${NC}"
+    echo ""
+
+    # Atualizar cada arquivo YAML
+    for arquivo in n8n/queue/orq_editor.yaml n8n/queue/orq_webhook.yaml n8n/queue/orq_worker.yaml; do
+        nome_arquivo=$(basename "$arquivo")
+        echo -e "   🔧 Atualizando ${nome_arquivo}..."
+
+        if sed -i.bak "s|image: n8nio/n8n:.*|image: n8nio/n8n:${VERSAO}|g" "$arquivo" 2>/dev/null; then
+            echo -e "${GREEN}      ✅ ${nome_arquivo} atualizado${NC}"
+            log "Arquivo $nome_arquivo atualizado para v${VERSAO}"
+        else
+            erro_fatal "Falha ao atualizar $nome_arquivo"
+        fi
+    done
+
+    echo ""
+    echo -e "${GREEN}✅ ARQUIVOS ATUALIZADOS PARA v${VERSAO}!${NC}"
+}
 
 clear
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
@@ -312,24 +420,21 @@ echo ""
 
 log "ETAPA 3: Atualizando arquivos de configuração"
 
-echo -e "${BLUE}📝 Atualizando arquivos para versão ${NOVA_VERSAO}...${NC}"
-echo ""
+if [ "$MIGRACAO_EM_ETAPAS" = true ]; then
+    echo -e "${YELLOW}📋 Migração em 2 etapas (mais seguro):${NC}"
+    echo ""
+    echo "   Etapa 1: v${VERSAO_ATUAL} → v${VERSAO_INTERMEDIARIA}"
+    echo "   Etapa 2: v${VERSAO_INTERMEDIARIA} → v${NOVA_VERSAO}"
+    echo ""
+    atualizar_arquivos_yaml "$VERSAO_INTERMEDIARIA"
+else
+    echo -e "${YELLOW}📋 Migração direta:${NC}"
+    echo ""
+    echo "   v${VERSAO_ATUAL} → v${NOVA_VERSAO}"
+    echo ""
+    atualizar_arquivos_yaml "$NOVA_VERSAO"
+fi
 
-# Atualizar cada arquivo YAML
-for arquivo in n8n/queue/orq_editor.yaml n8n/queue/orq_webhook.yaml n8n/queue/orq_worker.yaml; do
-    nome_arquivo=$(basename "$arquivo")
-    echo -e "   🔧 Atualizando ${nome_arquivo}..."
-
-    if sed -i.bak "s|image: n8nio/n8n:.*|image: n8nio/n8n:${NOVA_VERSAO}|g" "$arquivo" 2>/dev/null; then
-        echo -e "${GREEN}      ✅ ${nome_arquivo} atualizado${NC}"
-        log "Arquivo $nome_arquivo atualizado para v${NOVA_VERSAO}"
-    else
-        erro_fatal "Falha ao atualizar $nome_arquivo"
-    fi
-done
-
-echo ""
-echo -e "${GREEN}✅ ARQUIVOS ATUALIZADOS COM SUCESSO!${NC}"
 log "ETAPA 3: Arquivos de configuração atualizados"
 
 pausar
@@ -337,6 +442,41 @@ pausar
 ###############################################################################
 # ETAPA 4: ATUALIZAR N8N
 ###############################################################################
+
+realizar_atualizacao_servicos() {
+    local VERSAO=$1
+    local ETAPA_MSG=$2
+
+    echo ""
+    echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo -e "${BLUE}${ETAPA_MSG}${NC}"
+    echo -e "${PURPLE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
+    echo ""
+
+    # Exportar variáveis
+    export DOMAIN DATABASE DATABASE_PASSWORD N8N_ENCRYPTION_KEY INITIAL_ADMIN_EMAIL INITIAL_ADMIN_PASSWORD
+
+    echo -e "${BLUE}🔄 Atualizando serviços para v${VERSAO}...${NC}"
+    echo ""
+
+    # Editor (mais demorado por causa das migrações do banco)
+    echo -e "   [1/3] 📝 Editor..."
+    atualizar_servico_n8n "n8n_editor" "n8n/queue/orq_editor.yaml" "$VERSAO" 60
+
+    # Webhook
+    echo ""
+    echo -e "   [2/3] 🌐 Webhook..."
+    atualizar_servico_n8n "n8n_webhook" "n8n/queue/orq_webhook.yaml" "$VERSAO" 30
+
+    # Worker
+    echo ""
+    echo -e "   [3/3] ⚙️  Worker..."
+    atualizar_servico_n8n "n8n_worker" "n8n/queue/orq_worker.yaml" "$VERSAO" 30
+
+    echo ""
+    echo -e "${GREEN}✅ Todos os serviços atualizados para v${VERSAO}!${NC}"
+    log "Serviços atualizados com sucesso para v${VERSAO}"
+}
 
 clear
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
@@ -346,54 +486,58 @@ echo ""
 
 log "ETAPA 4: Iniciando atualização dos serviços n8n"
 
-echo -e "${YELLOW}⚠️  O n8n ficará offline durante esta etapa (~3 minutos)${NC}"
-echo ""
+if [ "$MIGRACAO_EM_ETAPAS" = true ]; then
+    echo -e "${YELLOW}⚠️  O n8n ficará offline durante esta etapa (~5 minutos)${NC}"
+    echo -e "${YELLOW}    Migração em 2 etapas para garantir máxima compatibilidade${NC}"
+else
+    echo -e "${YELLOW}⚠️  O n8n ficará offline durante esta etapa (~3 minutos)${NC}"
+fi
 
+echo ""
 pausar
 
-# Exportar variáveis
-export DOMAIN DATABASE DATABASE_PASSWORD N8N_ENCRYPTION_KEY INITIAL_ADMIN_EMAIL INITIAL_ADMIN_PASSWORD
+if [ "$MIGRACAO_EM_ETAPAS" = true ]; then
+    # ========== ETAPA 1: v1.x → v2.0.0 ==========
+    realizar_atualizacao_servicos "$VERSAO_INTERMEDIARIA" "🔸 ETAPA 1/2: Atualizando para v${VERSAO_INTERMEDIARIA} (versão estável)"
 
-echo -e "${BLUE}🔄 Atualizando serviços do n8n...${NC}"
-echo ""
-
-# Editor
-echo -e "   [1/3] 📝 Atualizando Editor..."
-echo -e "${YELLOW}         ⏳ Aguarde ~60 segundos (migração do banco de dados)...${NC}"
-if docker stack deploy -c n8n/queue/orq_editor.yaml n8n_editor >/dev/null 2>&1; then
-    sleep 60
-    echo -e "${GREEN}         ✅ Editor atualizado${NC}"
-    log "Editor atualizado com sucesso"
-else
-    erro_fatal "Falha ao atualizar o Editor"
-fi
-
-# Webhook
-echo ""
-echo -e "   [2/3] 🌐 Atualizando Webhook..."
-echo -e "${YELLOW}         ⏳ Aguarde ~30 segundos...${NC}"
-if docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook >/dev/null 2>&1; then
+    echo ""
+    echo -e "${YELLOW}⏳ Aguardando 30 segundos para estabilização...${NC}"
     sleep 30
-    echo -e "${GREEN}         ✅ Webhook atualizado${NC}"
-    log "Webhook atualizado com sucesso"
+
+    # Verificar se primeira etapa funcionou
+    echo ""
+    echo -e "${BLUE}🔍 Verificando primeira etapa da migração...${NC}"
+    EDITOR_SERVICE=$(docker service ls --format "{{.Name}}" 2>/dev/null | grep n8n_editor | head -1)
+    LOGS_CHECK=$(docker service logs "$EDITOR_SERVICE" --tail 30 2>&1)
+
+    if echo "$LOGS_CHECK" | grep -qi "error.*migration\|migration.*failed"; then
+        erro_fatal "Erro na primeira etapa da migração (v${VERSAO_INTERMEDIARIA}).\n   Verifique os logs: docker service logs $EDITOR_SERVICE"
+    fi
+
+    echo -e "${GREEN}   ✅ Primeira etapa concluída com sucesso!${NC}"
+    echo ""
+    sleep 5
+
+    # ========== ETAPA 2: v2.0.0 → v2.4.3 ==========
+    echo -e "${BLUE}Preparando segunda etapa da migração...${NC}"
+    echo ""
+    sleep 3
+
+    # Atualizar arquivos YAML para versão final
+    atualizar_arquivos_yaml "$NOVA_VERSAO"
+
+    echo ""
+    pausar
+
+    realizar_atualizacao_servicos "$NOVA_VERSAO" "🔸 ETAPA 2/2: Atualizando para v${NOVA_VERSAO} (versão final)"
+
 else
-    erro_fatal "Falha ao atualizar o Webhook"
+    # ========== MIGRAÇÃO DIRETA ==========
+    realizar_atualizacao_servicos "$NOVA_VERSAO" "🔸 Atualizando para v${NOVA_VERSAO}"
 fi
 
-# Worker
 echo ""
-echo -e "   [3/3] ⚙️  Atualizando Worker..."
-echo -e "${YELLOW}         ⏳ Aguarde ~30 segundos...${NC}"
-if docker stack deploy -c n8n/queue/orq_worker.yaml n8n_worker >/dev/null 2>&1; then
-    sleep 30
-    echo -e "${GREEN}         ✅ Worker atualizado${NC}"
-    log "Worker atualizado com sucesso"
-else
-    erro_fatal "Falha ao atualizar o Worker"
-fi
-
-echo ""
-echo -e "${GREEN}✅ TODOS OS SERVIÇOS ATUALIZADOS!${NC}"
+echo -e "${GREEN}✅ ATUALIZAÇÃO DOS SERVIÇOS CONCLUÍDA!${NC}"
 log "ETAPA 4: Atualização dos serviços concluída"
 
 pausar
