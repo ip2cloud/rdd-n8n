@@ -116,10 +116,10 @@ atualizar_variaveis_env() {
     cp .env "$BACKUP_DIR/.env.backup"
     log "Backup do .env criado"
 
-    # Contadores
-    local REMOVIDAS=0
-    local ADICIONADAS=0
-    local JA_EXISTENTES=0
+    # Contadores (sem local para serem acessíveis pela função interna)
+    REMOVIDAS=0
+    ADICIONADAS=0
+    JA_EXISTENTES=0
 
     # Variáveis obsoletas que devem ser removidas na v2.x
     VARS_OBSOLETAS=(
@@ -134,11 +134,11 @@ atualizar_variaveis_env() {
             echo -e "      ${YELLOW}⚠️  Removendo: ${VAR}${NC}"
             sed -i.bak "/^${VAR}=/d" .env
             log "Variável obsoleta removida: $VAR"
-            ((REMOVIDAS++))
+            REMOVIDAS=$((REMOVIDAS + 1))
         fi
     done
 
-    if [ $REMOVIDAS -eq 0 ]; then
+    if [ "$REMOVIDAS" -eq 0 ]; then
         echo -e "      ${GREEN}✓ Nenhuma variável obsoleta encontrada${NC}"
     else
         echo -e "      ${GREEN}✓ ${REMOVIDAS} variável(is) obsoleta(s) removida(s)${NC}"
@@ -148,53 +148,54 @@ atualizar_variaveis_env() {
     echo ""
     echo -e "   ${BLUE}➕ Verificando variáveis necessárias para v2.x...${NC}"
 
-    # Array com todas as variáveis v2.x
-    declare -A VARS_V2X=(
-        ["N8N_SECURE_COOKIE"]="true"
-        ["N8N_GIT_NODE_DISABLE_BARE_REPOS"]="true"
-        ["EXECUTIONS_DATA_PRUNE"]="true"
-        ["EXECUTIONS_DATA_MAX_AGE"]="336"
-        ["N8N_LOG_LEVEL"]="info"
-        ["N8N_BLOCK_ENV_ACCESS_IN_NODE"]="false"
-        ["N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS"]="true"
-        ["N8N_RUNNERS_ENABLED"]="true"
-        ["N8N_RUNNERS_MODE"]="internal"
-        ["NODE_EXCLUDE"]='"[]"'
-        ["N8N_SKIP_AUTH_ON_OAUTH_CALLBACK"]="false"
-    )
-
     # Adicionar seção de comentário se não existir
     if ! grep -q "# Configurações de segurança v2.x" .env 2>/dev/null; then
         echo "" >> .env
         echo "# Configurações de segurança v2.x" >> .env
     fi
 
-    # Verificar e adicionar cada variável
-    for VAR_NAME in "${!VARS_V2X[@]}"; do
-        VAR_VALUE="${VARS_V2X[$VAR_NAME]}"
+    # Função auxiliar para adicionar/verificar variável
+    adicionar_variavel() {
+        local VAR_NAME="$1"
+        local VAR_VALUE="$2"
 
         if grep -q "^${VAR_NAME}=" .env 2>/dev/null; then
             # Variável já existe
-            VALOR_ATUAL=$(grep "^${VAR_NAME}=" .env | cut -d'=' -f2-)
+            VALOR_ATUAL=$(grep "^${VAR_NAME}=" .env 2>/dev/null | head -1 | cut -d'=' -f2-)
             echo -e "      ${BLUE}ℹ️  ${VAR_NAME} já existe (valor: ${VALOR_ATUAL})${NC}"
-            ((JA_EXISTENTES++))
+            JA_EXISTENTES=$((JA_EXISTENTES + 1))
             log "Variável já existe: ${VAR_NAME}=${VALOR_ATUAL}"
         else
             # Adicionar variável
-            echo "${VAR_NAME}=${VAR_VALUE}" >> .env
+            echo "${VAR_NAME}=${VAR_VALUE}" >> .env || {
+                echo -e "      ${RED}❌ Erro ao adicionar: ${VAR_NAME}${NC}"
+                return 1
+            }
             echo -e "      ${GREEN}✅ Adicionada: ${VAR_NAME}=${VAR_VALUE}${NC}"
             log "Variável adicionada: ${VAR_NAME}=${VAR_VALUE}"
-            ((ADICIONADAS++))
+            ADICIONADAS=$((ADICIONADAS + 1))
         fi
-    done
+        return 0
+    }
 
-    # Adicionar seção de execução se necessário
-    if ! grep -q "# Configurações de segurança e execução v2.x" .env 2>/dev/null; then
-        if [ $ADICIONADAS -gt 5 ]; then
-            echo "" >> .env
-            echo "# Configurações de segurança e execução v2.x" >> .env
-        fi
-    fi
+    # Verificar e adicionar cada variável (compatível com Bash 3.x+)
+    # Desabilitar exit on error temporariamente para não parar se uma variável falhar
+    set +e
+
+    adicionar_variavel "N8N_SECURE_COOKIE" "true"
+    adicionar_variavel "N8N_GIT_NODE_DISABLE_BARE_REPOS" "true"
+    adicionar_variavel "EXECUTIONS_DATA_PRUNE" "true"
+    adicionar_variavel "EXECUTIONS_DATA_MAX_AGE" "336"
+    adicionar_variavel "N8N_LOG_LEVEL" "info"
+    adicionar_variavel "N8N_BLOCK_ENV_ACCESS_IN_NODE" "false"
+    adicionar_variavel "N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS" "true"
+    adicionar_variavel "N8N_RUNNERS_ENABLED" "true"
+    adicionar_variavel "N8N_RUNNERS_MODE" "internal"
+    adicionar_variavel "NODE_EXCLUDE" '"[]"'
+    adicionar_variavel "N8N_SKIP_AUTH_ON_OAUTH_CALLBACK" "false"
+
+    # Reabilitar exit on error
+    set -e
 
     echo ""
     echo -e "${GREEN}   ✅ Verificação de variáveis concluída!${NC}"
