@@ -1,0 +1,255 @@
+╔════════════════════════════════════════════════════════════════════╗
+║                                                                    ║
+║              📚 GUIA DE ATUALIZAÇÃO DO N8N v2.4.3                 ║
+║                       (SUPER SIMPLES)                              ║
+║                                                                    ║
+╚════════════════════════════════════════════════════════════════════╝
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🎯 O QUE É ISSO?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Este pacote contém tudo que você precisa para atualizar seu n8n
+da versão 1.x para a versão 2.4.3 de forma AUTOMÁTICA e SEGURA.
+
+Não precisa ser expert em tecnologia! Basta seguir os passos abaixo.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✅ ANTES DE COMEÇAR
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. ☑️  Tenha acesso SSH ao servidor onde o n8n está instalado
+2. ☑️  Tenha permissão de administrador (sudo/root)
+3. ☑️  Avise seus usuários que o n8n ficará offline por ~5 minutos
+4. ☑️  Escolha um horário com menos movimento
+5. ☑️  Tenha ~10 minutos disponíveis
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 PASSO A PASSO (SUPER FÁCIL)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PASSO 1: Conectar ao servidor
+──────────────────────────────
+
+Use SSH para conectar ao seu servidor:
+
+    ssh usuario@seu-servidor.com
+
+
+PASSO 2: Ir para a pasta do n8n
+────────────────────────────────
+
+    cd /caminho/para/rdd-n8n
+
+
+PASSO 3: Entrar na pasta de migração
+─────────────────────────────────────
+
+    cd migracao
+
+
+PASSO 4: Executar o script de atualização
+──────────────────────────────────────────
+
+    sudo ./migrate.sh
+
+
+PASSO 5: Seguir as instruções na tela
+──────────────────────────────────────
+
+O script vai:
+  ✅ Mostrar o que será feito
+  ✅ Pedir sua confirmação
+  ✅ Criar backup automático de TUDO
+  ✅ Atualizar o n8n
+  ✅ Verificar se tudo funcionou
+
+Você só precisa:
+  • Ler as mensagens
+  • Pressionar ENTER quando pedido
+  • Digitar SIM quando solicitado
+
+
+PASSO 6: Testar o n8n
+─────────────────────
+
+Quando a atualização terminar:
+
+  1. Abra o navegador
+  2. Acesse: https://fluxos.seu-dominio.com
+  3. Faça login normalmente
+  4. Teste seus principais workflows
+
+
+PRONTO! 🎉
+──────────
+
+Se tudo funcionou, você está usando a versão 2.4.3!
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❓ E SE ALGO DER ERRADO?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+NÃO ENTRE EM PÂNICO! 😊
+
+O script cria backup COMPLETO de tudo antes de atualizar.
+
+Se algo não funcionar, você pode voltar para a versão anterior:
+
+
+OPÇÃO 1: Restauração Automática
+────────────────────────────────
+
+Se o script detectar erro durante a atualização, ele mesmo
+restaura tudo automaticamente. Você não precisa fazer nada!
+
+
+OPÇÃO 2: Restauração Manual
+────────────────────────────
+
+Se você quiser voltar depois que a atualização terminou:
+
+    1. Conecte ao servidor (SSH)
+    2. Vá para: cd /caminho/para/rdd-n8n/migracao
+    3. Execute: sudo ./restaurar.sh
+    4. Digite SIM quando pedido
+    5. Aguarde ~3 minutos
+
+Pronto! Tudo volta ao normal como estava antes.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 DEPOIS DA ATUALIZAÇÃO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Teste seus workflows principais
+────────────────────────────────
+
+  1. Abra cada workflow importante
+  2. Clique em "Execute Workflow"
+  3. Verifique se funciona normalmente
+
+
+Se aparecer mensagem sobre "ferramenta de verificação"
+───────────────────────────────────────────────────────
+
+A versão 2.x pode mostrar uma ferramenta de verificação
+de compatibilidade na interface. Se aparecer:
+
+  1. Clique nela
+  2. Execute a verificação
+  3. Siga as instruções mostradas
+
+
+A maioria dos workflows funciona sem mudanças!
+───────────────────────────────────────────────
+
+Se algum workflow precisar de ajuste, geralmente é algo simples
+como trocar um tipo de gatilho (trigger). A interface mostra
+exatamente o que precisa ser feito.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📁 ARQUIVOS NESTA PASTA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  migrate.sh       → Script principal de atualização
+  restaurar.sh     → Script para voltar à versão anterior
+  LEIA-ME.txt      → Este arquivo (instruções)
+
+  backup_XXXXXXX/  → Pasta com backup (criada automaticamente)
+  *.log            → Logs da migração (criados automaticamente)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+⏱️ QUANTO TEMPO LEVA?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  • Tempo total: 5-8 minutos
+  • n8n offline: ~3 minutos
+  • Sua participação: ~1 minuto (confirmar e aguardar)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔒 É SEGURO?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SIM! Muito seguro!
+
+  ✅ Backup completo antes de qualquer mudança
+  ✅ Restauração automática se algo der errado
+  ✅ Seus workflows e dados não são perdidos
+  ✅ Você pode voltar para a versão anterior a qualquer momento
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+❓ PERGUNTAS FREQUENTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+P: Vou perder meus workflows?
+R: NÃO! Tudo é preservado. O script só atualiza o programa,
+   seus dados ficam intactos.
+
+
+P: E se eu não souber usar SSH?
+R: SSH é como "entrar" no servidor pela linha de comando.
+   Se você tem um administrador de sistemas, peça ajuda a ele.
+   É muito rápido e simples para quem já usa Linux.
+
+
+P: Posso fazer isso em horário comercial?
+R: Pode, mas o n8n ficará offline por ~3 minutos.
+   Recomendamos fazer em horário de menor movimento.
+
+
+P: E se minha internet cair durante a atualização?
+R: O script salva tudo localmente antes. Se a conexão cair,
+   você pode reconectar e executar o script de restauração.
+
+
+P: Preciso atualizar AGORA?
+R: Não é obrigatório fazer imediatamente, mas a versão 2.x
+   traz melhorias importantes de segurança e performance.
+   Recomendamos atualizar quando puder.
+
+
+P: Quanto custa a atualização?
+R: É GRATUITA! Tanto o n8n quanto estes scripts são gratuitos.
+
+
+P: Posso executar de novo se falhar?
+R: Sim! Você pode executar quantas vezes precisar.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📞 PRECISA DE MAIS AJUDA?
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  • Comunidade n8n: https://community.n8n.io/
+  • Documentação: https://docs.n8n.io/
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+✨ RESUMO RÁPIDO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. Conecte ao servidor via SSH
+2. cd /caminho/para/rdd-n8n/migracao
+3. sudo ./migrate.sh
+4. Siga as instruções na tela
+5. Teste seus workflows
+6. Pronto! 🎉
+
+
+Boa atualização! 🚀
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Versão: 1.0
+Data: Janeiro 2026
+Compatibilidade: n8n v1.x → v2.4.3
