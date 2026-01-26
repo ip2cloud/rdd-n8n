@@ -3,8 +3,15 @@
 ## ⚡ Início Rápido
 
 ```bash
-# 1. Entre na pasta
-cd /caminho/para/rdd-n8n/migracao
+# 1. Entre na pasta rdd
+cd rdd-n8n
+
+# 2. Atualize o projeto
+git checkout main
+git pull origin main
+
+# 3. Entre na pasta
+cd /migracao
 
 # 2. Leia o guia
 cat COMECE-AQUI.txt
@@ -19,19 +26,20 @@ sudo ./migrate.sh
 
 ## 📋 Arquivos do Pacote
 
-| Arquivo | Descrição | Para Quem |
-|---------|-----------|-----------|
-| **migrate.sh** | Script de migração automática v1.x → v2.4.3 | ✅ TODOS |
-| **restaurar.sh** | Script de restauração (rollback) | ✅ TODOS |
-| **COMECE-AQUI.txt** | Guia visual de 3 passos | 👥 Usuários |
-| **LEIA-ME.txt** | Manual completo em português | 👥 Usuários |
-| **README.md** | Documentação técnica (este arquivo) | 🔧 Técnicos |
+| Arquivo             | Descrição                                   | Para Quem   |
+| ------------------- | ------------------------------------------- | ----------- |
+| **migrate.sh**      | Script de migração automática v1.x → v2.4.3 | ✅ TODOS    |
+| **restaurar.sh**    | Script de restauração (rollback)            | ✅ TODOS    |
+| **COMECE-AQUI.txt** | Guia visual de 3 passos                     | 👥 Usuários |
+| **LEIA-ME.txt**     | Manual completo em português                | 👥 Usuários |
+| **README.md**       | Documentação técnica (este arquivo)         | 🔧 Técnicos |
 
 ---
 
 ## 🎯 O Que Cada Script Faz?
 
 ### `migrate.sh` (Principal)
+
 - ✅ Backup automático completo (banco + arquivos + .env)
 - ✅ Atualização inteligente de variáveis de ambiente
 - ✅ Limpeza de migrações problemáticas do banco
@@ -41,6 +49,7 @@ sudo ./migrate.sh
 - ⏱️ Tempo: 8-12 minutos
 
 ### `restaurar.sh` (Rollback)
+
 - 🔄 Restaura versão anterior
 - 📦 Usa backup criado pelo migrate.sh
 - ⏱️ Tempo: ~3 minutos
@@ -50,6 +59,7 @@ sudo ./migrate.sh
 ## 📖 Fluxo de Uso
 
 ### Para Leigos
+
 ```
 1. Ler COMECE-AQUI.txt
 2. Executar migrate.sh
@@ -58,6 +68,7 @@ sudo ./migrate.sh
 ```
 
 ### Para Técnicos
+
 ```
 1. Ler README.md (este arquivo)
 2. Ler LEIA-ME.txt para detalhes
@@ -71,6 +82,7 @@ sudo ./migrate.sh
 ## ⚠️ Informações Importantes
 
 ### Requisitos
+
 - ✅ Acesso root/sudo
 - ✅ n8n v1.x instalado
 - ✅ PostgreSQL como banco de dados
@@ -78,10 +90,12 @@ sudo ./migrate.sh
 - ✅ Conexão com internet
 
 ### Downtime Esperado
+
 - ⏸️ **~5 minutos** de indisponibilidade do n8n
 - ⏱️ **8-12 minutos** de processo total (migração em 2 etapas)
 
 ### O Que é Preservado
+
 - ✅ Todos os workflows
 - ✅ Todas as credenciais
 - ✅ Todas as execuções
@@ -89,13 +103,16 @@ sudo ./migrate.sh
 - ✅ Dados do banco de dados
 
 ### Variáveis de Ambiente Atualizadas
+
 O script atualiza automaticamente o arquivo `.env`:
 
 **Removidas (obsoletas na v2.x):**
+
 - ❌ `N8N_CONFIG_FILES`
 - ❌ `QUEUE_WORKER_MAX_STALLED_COUNT`
 
 **Adicionadas (necessárias para v2.x):**
+
 - ✅ `N8N_SECURE_COOKIE=true`
 - ✅ `N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true` (obrigatório)
 - ✅ `N8N_RUNNERS_ENABLED=true`
@@ -111,6 +128,7 @@ O script atualiza automaticamente o arquivo `.env`:
 **Importante:** O script verifica se cada variável já existe antes de adicionar, respeitando personalizações existentes.
 
 ### Backups Criados
+
 - 📦 Banco de dados PostgreSQL (SQL dump)
 - 📋 Arquivos YAML de configuração
 - 📄 Arquivo .env
@@ -121,15 +139,19 @@ O script atualiza automaticamente o arquivo `.env`:
 ## 🆘 Em Caso de Problemas
 
 ### Durante a Migração
+
 O script `migrate.sh` restaura **automaticamente** se detectar erro.
 
 ### Após a Migração
+
 Se quiser voltar para a versão anterior:
+
 ```bash
 sudo ./restaurar.sh
 ```
 
 ### Suporte
+
 - 📖 Leia: `cat LEIA-ME.txt`
 - 🌐 Comunidade n8n: https://community.n8n.io/
 - 📚 Documentação: https://docs.n8n.io/
@@ -187,6 +209,7 @@ Antes de começar, verifique:
 ## 🔍 Comandos Úteis
 
 ### Verificar Status
+
 ```bash
 # Status dos serviços
 docker service ls | grep n8n
@@ -196,6 +219,7 @@ docker service logs $(docker service ls --format '{{.Name}}' | grep n8n_editor)
 ```
 
 ### Diagnóstico
+
 ```bash
 # Verificar Docker
 docker info
@@ -208,6 +232,7 @@ df -h
 ```
 
 ### Backups
+
 ```bash
 # Listar backups criados
 ls -lht backup_*/
