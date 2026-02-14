@@ -12,6 +12,9 @@ BACKUP_DIR="backups"
 YAML_EDITOR="n8n/queue/orq_editor.yaml"
 YAML_WEBHOOK="n8n/queue/orq_webhook.yaml"
 YAML_WORKER="n8n/queue/orq_worker.yaml"
+V2_EDITOR="n8n/queue-v2/orq_editor.yaml"
+V2_WEBHOOK="n8n/queue-v2/orq_webhook.yaml"
+V2_WORKER="n8n/queue-v2/orq_worker.yaml"
 
 echo "╔══════════════════════════════════════════╗"
 echo "║     UPGRADE N8N 1.x → 2.6.4             ║"
@@ -70,14 +73,24 @@ if [[ "$CURRENT_VERSION" =~ ^2\. ]]; then
     exit 1
 fi
 
-# Verifica YAMLs existem
+# Verifica YAMLs atuais existem
 for yaml_file in "$YAML_EDITOR" "$YAML_WEBHOOK" "$YAML_WORKER"; do
     if [ ! -f "$yaml_file" ]; then
         echo "❌ Arquivo $yaml_file não encontrado"
         exit 1
     fi
 done
-echo "✅ Arquivos YAML encontrados"
+echo "✅ Arquivos YAML v1 encontrados"
+
+# Verifica YAMLs v2 existem
+for v2_file in "$V2_EDITOR" "$V2_WEBHOOK" "$V2_WORKER"; do
+    if [ ! -f "$v2_file" ]; then
+        echo "❌ Arquivo $v2_file não encontrado"
+        echo "   A pasta n8n/queue-v2/ precisa existir com os YAMLs da v2"
+        exit 1
+    fi
+done
+echo "✅ Arquivos YAML v2 encontrados"
 
 # Carregar variáveis
 source .env
@@ -177,20 +190,28 @@ echo "   ✅ .env.backup.${TIMESTAMP}"
 echo ""
 
 ########################################
-# 2.5 Atualizar YAMLs via sed
+# 2.5 Substituir YAMLs pelos da v2
 ########################################
 
-echo "📝 Atualizando arquivos YAML..."
+echo "📝 Atualizando arquivos YAML para v2..."
 
-for yaml_file in "$YAML_EDITOR" "$YAML_WEBHOOK" "$YAML_WORKER"; do
-    # Troca imagem para nova versão
-    sed -i "s|image: n8nio/n8n:.*|image: n8nio/n8n:${TARGET_VERSION}|g" "$yaml_file"
-
-    # Remove linha deprecated (variável com typo, removida no v2)
-    sed -i "/OFFLOAD_MANUAL_EXECUTIONS_TO_WORKES/d" "$yaml_file"
-
-    echo "   ✅ $yaml_file atualizado"
+# Verifica se os YAMLs v2 existem
+for v2_file in "$V2_EDITOR" "$V2_WEBHOOK" "$V2_WORKER"; do
+    if [ ! -f "$v2_file" ]; then
+        echo "❌ Arquivo $v2_file não encontrado"
+        echo "   Execute: sudo ./rollback-n8n-v2.sh"
+        exit 1
+    fi
 done
+
+cp "$V2_EDITOR" "$YAML_EDITOR"
+echo "   ✅ orq_editor.yaml → v2"
+
+cp "$V2_WEBHOOK" "$YAML_WEBHOOK"
+echo "   ✅ orq_webhook.yaml → v2"
+
+cp "$V2_WORKER" "$YAML_WORKER"
+echo "   ✅ orq_worker.yaml → v2"
 
 echo ""
 

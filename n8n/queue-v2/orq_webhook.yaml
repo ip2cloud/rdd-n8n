@@ -1,0 +1,115 @@
+version: "3.7"
+
+services:
+  n8nv2_webhook_ip2:
+    image: n8nio/n8n:2.6.4
+    hostname: "{{.Service.Name}}.{{.Task.Slot}}"
+    command: webhook
+    networks:
+      - network_swarm_public
+      - network_swarm_databases
+    environment:
+      # --- Geral ---
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - NODE_ENV=production
+      - N8N_METRICS=true
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_PAYLOAD_SIZE_MAX=16
+      - N8N_LOG_LEVEL=info
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - NODE_OPTIONS="--max_old_space_size=4096"
+
+      # --- Banco de Dados (PostgreSQL) ---
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=${DATABASE}
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=postgres
+      - DB_POSTGRESDB_PASSWORD=${DATABASE_PASSWORD}
+
+      # --- URLs e Enderecos ---
+      - N8N_PORT=5678
+      - N8N_HOST=fluxos.${DOMAIN}
+      - N8N_EDITOR_BASE_URL=https://fluxos.${DOMAIN}/
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://webhook.${DOMAIN}/
+      - N8N_ENDPOINT_WEBHOOK=webhook
+
+      # --- Modo Fila (Queue + Redis) ---
+      - EXECUTIONS_MODE=queue
+      - QUEUE_BULL_REDIS_HOST=redis
+      - QUEUE_BULL_REDIS_PORT=6379
+      - QUEUE_BULL_REDIS_DB=2
+      # - QUEUE_BULL_REDIS_PASSWORD=SENHA
+      - EXECUTIONS_TIMEOUT=3600
+      - EXECUTIONS_TIMEOUT_MAX=7200
+
+      # --- Interface ---
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=true
+      - N8N_PUBLIC_API_SWAGGERUI_DISABLED=false
+      - N8N_TEMPLATES_ENABLED=true
+      - N8N_ONBOARDING_FLOW_DISABLED=true
+      - N8N_WORKFLOW_TAGS_DISABLED=false
+      - N8N_HIDE_USAGE_PAGE=false
+
+      # --- Limpeza de Execucoes ---
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=336
+      - EXECUTIONS_DATA_PRUNE_HARD_DELETE_INTERVAL=15
+      - EXECUTIONS_DATA_PRUNE_SOFT_DELETE_INTERVAL=60
+      - EXECUTIONS_DATA_PRUNE_MAX_COUNT=10000
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
+      - EXECUTIONS_DATA_SAVE_ON_PROGRESS=true
+      - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
+
+      # --- Bibliotecas e Community Nodes ---
+      - NODE_FUNCTION_ALLOW_BUILTIN=*
+      - NODE_FUNCTION_ALLOW_EXTERNAL=moment,lodash
+      - N8N_COMMUNITY_PACKAGES_ENABLED=true
+      - N8N_COMMUNITY_PACKAGES_ALLOW_TOOL_USAGE=true
+      - N8N_REINSTALL_MISSING_PACKAGES=true
+
+      # --- IA ---
+      - N8N_AI_ENABLED=false
+      - N8N_AI_PROVIDER=openai
+      - N8N_AI_OPENAI_API_KEY=
+
+      # --- Task Runner (internal mode) ---
+      - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_RUNNERS_MODE=internal
+      - NODE_EXCLUDE="[]"
+
+    deploy:
+      mode: replicated
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.n8n-webhook.rule=Host(`webhook.${DOMAIN}`)"
+        - "traefik.http.routers.n8n-webhook.entrypoints=websecure"
+        - "traefik.http.routers.n8n-webhook.tls=true"
+        - "traefik.http.routers.n8n-webhook.tls.certresolver=letsencrypt"
+        - "traefik.http.services.n8n-webhook.loadbalancer.server.port=5678"
+        - "traefik.http.routers.n8n-webhook.service=n8n-webhook"
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+      update_config:
+        parallelism: 1
+        delay: 30s
+        order: start-first
+        failure_action: rollback
+
+networks:
+  network_swarm_public:
+    name: network_swarm_public
+    external: true
+  network_swarm_databases:
+    name: network_swarm_databases
+    external: true
