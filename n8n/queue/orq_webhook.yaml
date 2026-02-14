@@ -4,7 +4,7 @@ services:
   # Definição do Serviço do Worker
   n8nv2_webhook_ip2:
     # imagem do docker
-    image: n8nio/n8n:1.123.7
+    image: n8nio/n8n:2.6.4
     # Define o hotname do container
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
     # comando padrão para subir o servidor web
@@ -43,7 +43,6 @@ services:
       # Configura a Permissão do Arquivo de Configuração
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - NODE_OPTIONS="--max_old_space_size=4096"
-      - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKES=true
       #########################################################
       #########################################################
       #########################################################
