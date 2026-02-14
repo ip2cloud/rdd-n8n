@@ -57,11 +57,11 @@ BACKUP_VERSION=$(grep -o 'image: n8nio/n8n:[^ ]*' "${YAML_EDITOR}.backup.${TIMES
 CURRENT_VERSION=$(grep -o 'image: n8nio/n8n:[^ ]*' "$YAML_EDITOR" | head -1 | sed 's/image: n8nio\/n8n://')
 
 echo "📋 Backup encontrado: ${TIMESTAMP}"
-echo "   Versao atual:    ${CURRENT_VERSION:-desconhecida}"
+echo "   Versao atual:     ${CURRENT_VERSION:-desconhecida}"
 echo "   Versao do backup: ${BACKUP_VERSION:-desconhecida}"
 echo ""
 
-read -p "Deseja restaurar para a versao ${BACKUP_VERSION}? (y/N): " CONFIRM
+read -p "Restaurar para a versao ${BACKUP_VERSION}? (y/N): " CONFIRM
 if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
     echo "❌ Rollback cancelado"
     exit 0
