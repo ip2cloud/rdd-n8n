@@ -100,15 +100,53 @@ echo "   ✅ .env restaurado"
 
 echo ""
 
+source .env
+export DOMAIN DATABASE DATABASE_PASSWORD N8N_ENCRYPTION_KEY INITIAL_ADMIN_EMAIL INITIAL_ADMIN_PASSWORD
+
 ########################################
-# 3. Redeploy com versao anterior
+# 3. Restaurar banco de dados
+########################################
+
+LATEST_SQL=$(ls -t backups/n8n_backup_*.sql 2>/dev/null | head -1)
+
+if [[ -n "$LATEST_SQL" ]]; then
+    echo "🗄️  Restaurando banco de dados..."
+    echo "   O n8n v2 altera o banco ao subir, entao a restauracao e obrigatoria."
+    echo ""
+
+    POSTGRES_CONTAINER=$(docker ps --filter "name=postgres" --format "{{.ID}}" | head -1)
+
+    if [[ -n "$POSTGRES_CONTAINER" ]]; then
+        # Dropar e recriar o banco para garantir estado limpo
+        echo "   → Recriando banco ${DATABASE:-n8n}..."
+        docker exec "$POSTGRES_CONTAINER" psql -U postgres -c "DROP DATABASE IF EXISTS \"${DATABASE:-n8n}\";" >/dev/null 2>&1
+        docker exec "$POSTGRES_CONTAINER" psql -U postgres -c "CREATE DATABASE \"${DATABASE:-n8n}\";" >/dev/null 2>&1
+
+        echo "   → Restaurando backup: $LATEST_SQL"
+        docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d "${DATABASE:-n8n}" < "$LATEST_SQL" >/dev/null 2>&1
+
+        if [[ $? -eq 0 ]]; then
+            echo "   ✅ Banco restaurado com sucesso"
+        else
+            echo "   ⚠️  Restauracao com avisos (pode ser normal)"
+        fi
+    else
+        echo "   ❌ Container PostgreSQL nao encontrado"
+        echo "   O banco nao foi restaurado. O n8n pode nao funcionar corretamente."
+    fi
+else
+    echo "⚠️  Nenhum backup SQL encontrado em backups/"
+    echo "   O banco nao sera restaurado. O n8n pode nao funcionar corretamente."
+fi
+
+echo ""
+
+########################################
+# 4. Redeploy com versao anterior
 ########################################
 
 echo "🚀 Reinstalando n8n ${BACKUP_VERSION}..."
 echo ""
-
-source .env
-export DOMAIN DATABASE DATABASE_PASSWORD N8N_ENCRYPTION_KEY INITIAL_ADMIN_EMAIL INITIAL_ADMIN_PASSWORD
 
 echo "   → [1/3] Deployando n8n Editor..."
 docker stack deploy -c "$YAML_EDITOR" n8n_editor
@@ -132,7 +170,7 @@ echo "   ✅ Worker deployado"
 echo ""
 
 ########################################
-# 4. Verificar servicos
+# 5. Verificar servicos
 ########################################
 
 echo "🏥 Verificando servicos..."
@@ -150,29 +188,6 @@ for service_name in n8n_editor n8n_webhook n8n_worker; do
 done
 
 echo ""
-
-########################################
-# 5. Restaurar banco (opcional)
-########################################
-
-LATEST_SQL=$(ls -t backups/n8n_backup_*.sql 2>/dev/null | head -1)
-
-if [[ -n "$LATEST_SQL" ]]; then
-    echo "📦 Backup do banco disponivel: $LATEST_SQL"
-    read -p "   Deseja restaurar o banco de dados tambem? (y/N): " RESTORE_DB
-
-    if [[ "$RESTORE_DB" =~ ^[Yy]$ ]]; then
-        POSTGRES_CONTAINER=$(docker ps --filter "name=postgres" --format "{{.ID}}" | head -1)
-        if [[ -n "$POSTGRES_CONTAINER" ]]; then
-            echo "   🗄️  Restaurando banco de dados..."
-            docker exec -i "$POSTGRES_CONTAINER" psql -U postgres < "$LATEST_SQL" >/dev/null 2>&1
-            echo "   ✅ Banco restaurado"
-        else
-            echo "   ❌ Container PostgreSQL nao encontrado"
-        fi
-    fi
-    echo ""
-fi
 
 ########################################
 # Final
