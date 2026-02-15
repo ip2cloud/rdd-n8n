@@ -1,125 +1,119 @@
-# 🚀 Instalação Automática do n8n + PostgreSQL + Redis
+# Instalacao Automatica do n8n v2 + PostgreSQL + Redis
 
-## ⚡ Instalação Completamente Automática em Uma Execução
+## Instalacao Completamente Automatica em Uma Execucao
 
-### 🎯 O que é instalado automaticamente:
-- Docker Swarm + Portainer + Traefik (SSL automático)
-- PostgreSQL 16 + Redis 7 
-- n8n completo (editor + webhook + worker) em modo queue
-- Todas as redes, volumes e configurações necessárias
+### O que e instalado automaticamente:
+- Docker Swarm + Portainer + Traefik (SSL automatico)
+- PostgreSQL 16 + Redis 7
+- n8n v2 completo (editor + webhook + worker) em modo queue
+- pgAdmin 4 para administracao do banco
+- Todas as redes, volumes e configuracoes necessarias
 
 ---
 
-## 📋 Como Instalar
+## Como Instalar
 
-### 1️⃣ Execute o instalador
+### 1. Execute o instalador
 
 ```bash
 git clone <url-do-repositorio>
-cd install
+cd rdd-n8n
 chmod +x install-simple.sh
 sudo ./install-simple.sh
 ```
 
-### 2️⃣ (Opcional) Configure SMTP para envio de credenciais:
+### 2. (Opcional) Configure SMTP para envio de credenciais:
 
 ```bash
 sudo ./setup-smtp.sh
 ```
 
-### 3️⃣ Responda 4-5 perguntas simples:
+### 3. Responda 4-5 perguntas simples:
 
 1. **Email do administrador**: seu-email@exemplo.com
-2. **Domínio principal**: exemplo.com
+2. **Dominio principal**: exemplo.com
 3. **Nome do banco** [ENTER = n8n]: nome_do_banco (opcional)
 4. **Senha do PostgreSQL** [ENTER = auto-gerar]: senha (opcional)
 5. **Receber credenciais por email** [ENTER = Sim]: Y/n (se SMTP configurado)
 
-> 💡 **Recomendado**: Tecle ENTER em tudo para usar os padrões
+> **Recomendado**: Tecle ENTER em tudo para usar os padroes
 
-### 4️⃣ Aguarde ~5 minutos e pronto!
+### 4. Aguarde ~5 minutos e pronto!
 
-✅ **Tudo instalado automaticamente sem perguntas adicionais!**
-
----
-
-## 🌐 Configure o DNS (Obrigatório)
-
-Aponte os domínios para o IP do seu servidor:
-
-```
-fluxos.SEU-DOMINIO.com   → IP_DO_SERVIDOR
-webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
-evo.SEU-DOMINIO.com      → IP_DO_SERVIDOR
-traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
-```
-
-**Nota**: pgAdmin não precisa de DNS, acesso direto via IP:4040
+Tudo instalado automaticamente sem perguntas adicionais.
 
 ---
 
-## 🔑 URLs de Acesso
+## Configure o DNS (Obrigatorio)
 
-### n8n (Automação de Workflows)
+Aponte os dominios para o IP do seu servidor:
+
+```
+fluxos.SEU-DOMINIO.com   -> IP_DO_SERVIDOR
+webhook.SEU-DOMINIO.com  -> IP_DO_SERVIDOR
+traefik.SEU-DOMINIO.com  -> IP_DO_SERVIDOR (opcional)
+```
+
+**Nota**: pgAdmin nao precisa de DNS, acesso direto via IP:4040
+
+---
+
+## URLs de Acesso
+
+### n8n (Automacao de Workflows)
 - **Editor**: https://fluxos.SEU-DOMINIO.com
 - **Webhook**: https://webhook.SEU-DOMINIO.com
-- **Credenciais**: Mostradas no final da instalação (salvas em `.env`)
-
-### Evolution API (WhatsApp Multi-Device)
-- **URL**: https://evo.SEU-DOMINIO.com
-- **API Key**: Mostrada no final da instalação (salva em `.env`)
-- **Função**: API para gerenciar instâncias WhatsApp Multi-Device
-- **Versão**: v2.3.6
-- **Documentação**: https://doc.evolution-api.com/
+- **Credenciais**: Mostradas no final da instalacao (salvas em `.env`)
 
 ### Portainer (Monitoramento Docker)
 - **URL**: https://IP_DO_SERVIDOR:9443
-- **Primeiro acesso**: Defina senha do admin (5 minutos após instalação)
-- **Função**: Monitorar containers e serviços
-- **Importante**: O script reseta o Portainer no final para garantir 5 minutos limpos
+- **Primeiro acesso**: Defina senha do admin (10 minutos apos instalacao)
+- **Funcao**: Monitorar containers e servicos
 
 ### Traefik (Dashboard do Proxy)
 - **URL**: https://traefik.SEU-DOMINIO.com
 - **Login**: admin / senha_gerada_automaticamente
-- **Função**: Monitoramento do proxy reverso e SSL
+- **Funcao**: Monitoramento do proxy reverso e SSL
 
-### pgAdmin (Administração PostgreSQL)
+### pgAdmin (Administracao PostgreSQL)
 - **URL**: http://IP_DO_SERVIDOR:4040
-- **Login**: mesmo email da instalação / senha_gerada_automaticamente
-- **Função**: Interface web para administração do PostgreSQL
+- **Login**: mesmo email da instalacao / senha_gerada_automaticamente
+- **Funcao**: Interface web para administracao do PostgreSQL
 
 ---
 
-## ⏱️ Tempo de Instalação
+## Tempo de Instalacao
 
-- **Interação**: 60-90 segundos (responder perguntas)
-- **Instalação**: ~5 minutos (automática)
-- **Aguardar serviços**: ~2 minutos adicionais
+- **Interacao**: 60-90 segundos (responder perguntas)
+- **Instalacao**: ~5 minutos (automatica)
+- **Aguardar servicos**: ~2 minutos adicionais
 
-**Total**: ~8 minutos do início ao acesso
+**Total**: ~8 minutos do inicio ao acesso
 
-## 📧 Sistema de Envio de Credenciais
+---
 
-### 🔐 Configuração Segura
-- **Configuração externa**: Credenciais SMTP fora do código fonte
-- **Arquivo protegido**: `/etc/n8n-installer/smtp.conf` com permissões 600
+## Sistema de Envio de Credenciais
+
+### Configuracao Segura
+- **Configuracao externa**: Credenciais SMTP fora do codigo fonte
+- **Arquivo protegido**: `/etc/n8n-installer/smtp.conf` com permissoes 600
 - **Fallback inteligente**: Se email falhar, exibe na tela
 - **Backup local**: Arquivo `.env` sempre mantido como backup
 
-### 📨 Como configurar:
+### Como configurar:
 
-#### 1️⃣ Configure o SMTP (uma vez apenas):
+#### 1. Configure o SMTP (uma vez apenas):
 ```bash
 sudo ./setup-smtp.sh
 ```
 
-#### 2️⃣ Durante a instalação:
+#### 2. Durante a instalacao:
 - Se SMTP configurado: pergunta se quer email
-- Se SMTP não configurado: apenas credenciais na tela
-- Credenciais sempre exibidas na tela também
+- Se SMTP nao configurado: apenas credenciais na tela
+- Credenciais sempre exibidas na tela tambem
 - Arquivo `.env` sempre salvo localmente
 
-### 🔧 Configuração Manual (alternativa):
+### Configuracao Manual (alternativa):
 ```bash
 sudo mkdir -p /etc/n8n-installer
 sudo tee /etc/n8n-installer/smtp.conf > /dev/null <<EOF
@@ -131,96 +125,83 @@ sudo chmod 600 /etc/n8n-installer/smtp.conf
 
 ---
 
-## 🔧 Scripts Auxiliares Inclusos
+## Scripts Disponiveis
 
-### Atualização do n8n
+### Atualizacao do n8n
 ```bash
 sudo ./update-n8n.sh
 ```
-- Atualiza n8n para qualquer versão disponível
-- Busca versões automaticamente no Docker Hub
-- Interface interativa com seleção por menu
-- Backup automático dos arquivos YAML
-- Deploy sequencial otimizado (Editor → Webhook → Worker)
-- Validação de imagens antes da atualização
+- Atualiza n8n para qualquer versao 2.x disponivel
+- Busca versoes automaticamente no Docker Hub
+- Interface interativa com selecao por menu
+- Backup automatico dos arquivos YAML
+- Deploy sequencial otimizado (Editor -> Webhook -> Worker)
+- Validacao de imagens antes da atualizacao
 
-### Atualização do Evolution API
+### Upgrade para n8n v2 (migracao de v1)
 ```bash
-sudo ./update-evolution.sh
+sudo ./upgrade-n8n-v2.sh
 ```
-- Atualiza Evolution API para qualquer versão disponível
-- Busca versões automaticamente no Docker Hub
-- Interface interativa com seleção por menu
-- Backup automático do arquivo YAML
-- Validação de imagens antes da atualização
+- Migra instalacoes n8n 1.x para v2
+- Backup automatico do banco PostgreSQL
+- Migracao de YAMLs (queue -> queue-v2)
+- Validacao de imagem e health checks
 
-### Configuração SSL/TLS
+### Rollback do n8n v2
+```bash
+sudo ./rollback-n8n-v2.sh
+```
+- Reverte upgrade v2 em caso de falha
+- Restaura YAMLs e banco PostgreSQL do backup
+
+### Configuracao SSL/TLS
 ```bash
 sudo ./update-ssl.sh
 ```
 - Configura certificados Let's Encrypt automaticamente
 - Atualiza Traefik com resolver SSL
-- Redeploy de todos os serviços com certificados
-- Certificados automáticos para todos os domínios
+- Redeploy de todos os servicos com certificados
+- Certificados automaticos para todos os dominios
 
-### Configuração SMTP
+### Configuracao SMTP
 ```bash
 sudo ./setup-smtp.sh
 ```
 - Configura credenciais para envio de email
 - Cria arquivo seguro `/etc/n8n-installer/smtp.conf`
-- Necessário apenas uma vez por servidor
-- Habilita envio de credenciais por email
+- Necessario apenas uma vez por servidor
 
-### Diagnóstico e Monitoramento
+### Diagnostico e Monitoramento
 ```bash
 ./debug.sh
 ```
 - Verifica status do Docker Swarm
 - Lista nodes, redes, volumes e stacks
-- Mostra logs dos serviços
-- Comandos úteis para troubleshooting
+- Mostra logs dos servicos
 
-### Limpeza Rápida
+### Limpeza Rapida
 ```bash
 ./cleanup.sh
 ```
 - Remove stacks principais (traefik, portainer)
 - Limpa sistema Docker
 - Desativa Docker Swarm
-- Rápido e direto
 
-### Desinstalação Completa
+### Desinstalacao Completa
 ```bash
 sudo ./uninstall.sh
 ```
-- Remove todos os stacks e serviços
-- Apaga volumes (⚠️ **DADOS PERDIDOS!**)
+- Remove todos os stacks e servicos
+- Apaga volumes (DADOS PERDIDOS!)
 - Desativa Docker Swarm
 - Remove redes overlay
-- Mantém backup do `.env`
-
-### Criação Manual do Banco n8n (se necessário)
-```bash
-./create-database.sh
-```
-- Cria o banco n8n manualmente se não foi criado automaticamente
-- Conecta no PostgreSQL e executa CREATE DATABASE
-- Útil para resolver erro "database does not exist"
-
-### Criação Manual do Banco Evolution (se necessário)
-```bash
-./create-evolution-database.sh
-```
-- Cria o banco do Evolution API manualmente
-- Verifica se o banco já existe antes de criar
-- Útil se Evolution API apresentar erro "database does not exist"
+- Mantem backup do `.env`
 
 ---
 
-## 🔧 Variáveis de Ambiente
+## Variaveis de Ambiente
 
-Todas as configurações ficam salvas no arquivo `.env`:
+Todas as configuracoes ficam salvas no arquivo `.env`:
 
 ```env
 DOMAIN=seu-dominio.com
@@ -233,205 +214,178 @@ INITIAL_ADMIN_PASSWORD=senha_gerada_automaticamente
 TRAEFIK_ADMIN_PASSWORD=senha_gerada_automaticamente
 TRAEFIK_ADMIN_HASH=hash_gerado_automaticamente
 PGADMIN_ADMIN_PASSWORD=senha_gerada_automaticamente
-EVOLUTION_API_KEY=chave_gerada_automaticamente
-EVOLUTION_DATABASE=bravo_evolution
-EVOLUTION_URL=https://evo.seu-dominio.com
 EDITOR_URL=https://fluxos.seu-dominio.com
 WEBHOOK_URL=https://webhook.seu-dominio.com
 ```
 
 ---
 
-## 📊 Comandos Úteis
+## Comandos Uteis
 
 ```bash
-# Ver status dos serviços
+# Ver status dos servicos
 docker service ls
 
 # Monitorar containers em tempo real
 docker-ctop
 
-# Ver logs de um serviço específico
+# Ver logs de um servico especifico
 docker service logs nome_do_servico
 
 # Ver stacks instalados
 docker stack ls
 
-# Carregar variáveis do .env
+# Carregar variaveis do .env
 source .env
 
-# Script de diagnóstico completo
+# Script de diagnostico completo
 ./debug.sh
 ```
 
 ---
 
-## ❓ Resolução de Problemas
+## Resolucao de Problemas
 
-### Script não executa?
+### Script nao executa?
 ```bash
-# Corrigir permissões e quebras de linha
+# Corrigir permissoes e quebras de linha
 sed -i 's/\r$//' *.sh
 chmod +x *.sh
 ```
 
-### Serviços não sobem?
+### Servicos nao sobem?
 ```bash
-# Diagnóstico completo
+# Diagnostico completo
 ./debug.sh
 
-# Ver logs específicos
+# Ver logs especificos
 docker service logs postgres_postgres
-docker service logs n8n_editor_n8n
+docker service logs n8n_editor_n8nv2_editor_ip2
 ```
 
-### n8n não acessa?
-1. ✅ Verifique se o DNS está configurado
-2. ✅ Aguarde ~2 minutos para todos os serviços subirem
-3. ✅ Verifique no Portainer se todos estão rodando
+### n8n nao acessa?
+1. Verifique se o DNS esta configurado
+2. Aguarde ~2 minutos para todos os servicos subirem
+3. Verifique no Portainer se todos estao rodando
 
-### Erro "database does not exist"?
+### Portainer nao acessa?
 ```bash
-# Criar banco n8n manualmente
-./create-database.sh
-
-# Criar banco Evolution API manualmente
-./create-evolution-database.sh
-```
-
-### Portainer não acessa?
-```bash
-# Verificar se está rodando
+# Verificar se esta rodando
 docker service ls | grep portainer
 
-# Resetar timeout (5 minutos novos)
+# Resetar timeout (10 minutos novos)
 docker service scale portainer_portainer=0
 sleep 3
 docker service scale portainer_portainer=1
 
-# Reinstalar se necessário
+# Reinstalar se necessario
 docker stack deploy -c portainer/portainer.yaml portainer
 ```
 
 ---
 
-## 🗑️ Desinstalação
+## Desinstalacao
 
-### Limpeza Rápida (mantém dados)
+### Limpeza Rapida (mantem dados)
 ```bash
 ./cleanup.sh
 ```
 
-### Remoção Completa (apaga tudo)
+### Remocao Completa (apaga tudo)
 ```bash
 sudo ./uninstall.sh
 ```
 
 ### Reinstalar
 ```bash
-# Após desinstalar, reinstale com:
+# Apos desinstalar, reinstale com:
 sudo ./install-simple.sh
 ```
 
 ---
 
-## 🔧 Requisitos do Sistema
+## Requisitos do Sistema
 
 - **OS**: Debian/Ubuntu (64-bit)
-- **RAM**: Mínimo 2GB (recomendado 4GB+)
+- **RAM**: Minimo 2GB (recomendado 4GB+)
 - **CPU**: 1 core (recomendado 2+ cores)
 - **Disco**: 10GB+ livres
-- **Usuário**: root ou sudo
-- **Domínio**: Um domínio válido configurado
+- **Usuario**: root ou sudo
+- **Dominio**: Um dominio valido configurado
 
 ---
 
-## ✅ Próximos Passos Após Instalação
+## Proximos Passos Apos Instalacao
 
-### 1️⃣ Configure o DNS
+### 1. Configure o DNS
 ```
-fluxos.SEU-DOMINIO.com   → IP_DO_SERVIDOR
-webhook.SEU-DOMINIO.com  → IP_DO_SERVIDOR
-evo.SEU-DOMINIO.com      → IP_DO_SERVIDOR
-traefik.SEU-DOMINIO.com  → IP_DO_SERVIDOR (opcional)
+fluxos.SEU-DOMINIO.com   -> IP_DO_SERVIDOR
+webhook.SEU-DOMINIO.com  -> IP_DO_SERVIDOR
+traefik.SEU-DOMINIO.com  -> IP_DO_SERVIDOR (opcional)
 ```
 
-### 2️⃣ Configure SSL (Recomendado)
+### 2. Configure SSL (Recomendado)
 ```bash
 sudo ./update-ssl.sh
 ```
 - Configura certificados Let's Encrypt automaticamente
-- Aguarde ~2 minutos para emissão dos certificados
+- Aguarde ~2 minutos para emissao dos certificados
 
-### 3️⃣ Aguarde ~2 minutos
-Os serviços precisam de um tempo para inicializar completamente.
+### 3. Aguarde ~2 minutos
+Os servicos precisam de um tempo para inicializar completamente.
 
-### 4️⃣ Acesse o n8n
+### 4. Acesse o n8n
 - URL: https://fluxos.SEU-DOMINIO.com
-- Use as credenciais mostradas no final da instalação
+- Use as credenciais mostradas no final da instalacao
 
-### 5️⃣ Monitore no Portainer (URGENTE!)
+### 5. Monitore no Portainer
 - URL: https://IP_DO_SERVIDOR:9443
 - Crie senha do admin no primeiro acesso
-- ⚠️ **IMPORTANTE**: Acesse em até 5 minutos após instalação
-- ✅ O script reseta o Portainer no final - você tem 5 minutos limpos
+- IMPORTANTE: Acesse em ate 10 minutos apos instalacao
 
-### 6️⃣ Acesse pgAdmin (se necessário)
+### 6. Acesse pgAdmin (se necessario)
 - URL: http://IP_DO_SERVIDOR:4040
-- Login: email da instalação / senha gerada automaticamente
-- Para administração do PostgreSQL
+- Login: email da instalacao / senha gerada automaticamente
 
 ---
 
-## 🔄 Manutenção e Atualizações
+## Estrutura do Projeto
 
-### Atualizar n8n para Nova Versão
-```bash
-sudo ./update-n8n.sh
 ```
-- Interface interativa para selecionar versões
-- Backup automático antes da atualização
-- Deploy otimizado com delays apropriados
-
-### Atualizar Evolution API para Nova Versão
-```bash
-sudo ./update-evolution.sh
-```
-- Interface interativa para selecionar versões
-- Busca automática de versões no Docker Hub
-- Backup automático antes da atualização
-
-### Configurar SSL/TLS
-```bash
-sudo ./update-ssl.sh
-```
-- Configura certificados Let's Encrypt
-- Redeploy automático com SSL ativo
-
-### Verificar Status dos Serviços
-```bash
-./debug.sh
-docker service ls
-docker stack ls
+rdd-n8n/
+├── install-simple.sh          # Instalador principal
+├── update-n8n.sh              # Atualizador de versao (2.x+)
+├── upgrade-n8n-v2.sh          # Migracao v1 -> v2
+├── rollback-n8n-v2.sh         # Rollback do upgrade v2
+├── update-ssl.sh              # Configuracao SSL
+├── setup-smtp.sh              # Configuracao SMTP
+├── debug.sh                   # Diagnostico
+├── cleanup.sh                 # Limpeza rapida
+├── uninstall.sh               # Desinstalacao completa
+├── .env                       # Credenciais (gerado na instalacao)
+├── smtp.conf.example          # Template SMTP
+├── n8n/queue-v2/
+│   ├── orq_editor.yaml        # n8n Editor
+│   ├── orq_webhook.yaml       # n8n Webhook
+│   └── orq_worker.yaml        # n8n Worker
+├── postgres16/postgres.yaml   # PostgreSQL 16
+├── redis/redis.yaml           # Redis 7
+├── traefik/traefik.yaml       # Traefik v3
+├── portainer/portainer.yaml   # Portainer
+└── pgadmin/pgadmin.yaml       # pgAdmin 4
 ```
 
 ---
 
-## 🎉 Pronto!
+## Principais Recursos
 
-**✅ Instalação super simplificada do n8n com PostgreSQL e Redis!**
-
-Tudo funciona automaticamente com SSL via Traefik e modo queue para alta performance.
-
-### 🚀 Principais Recursos:
-- ✅ **Docker Swarm** - Orquestração robusta
-- ✅ **n8n v2.4.3 Queue Mode** - Editor + Webhook + Worker
-- ✅ **PostgreSQL 16 + pgvector** - Banco de dados com suporte a vetores (AI)
-- ✅ **Redis 7** - Cache e filas de trabalho
-- ✅ **Traefik v3** - Proxy reverso com SSL automático
-- ✅ **Evolution API v2.3.6** - WhatsApp Multi-Device API
-- ✅ **Portainer** - Interface de gerenciamento
-- ✅ **pgAdmin 4** - Administração PostgreSQL
-- ✅ **Let's Encrypt** - Certificados SSL gratuitos
-- ✅ **Sistema SMTP** - Envio seguro de credenciais
-- ✅ **Scripts de Manutenção** - Atualização, diagnóstico, limpeza
+- **Docker Swarm** - Orquestracao robusta
+- **n8n v2 Queue Mode** - Editor + Webhook + Worker
+- **PostgreSQL 16** - Banco de dados robusto
+- **Redis 7** - Cache e filas de trabalho
+- **Traefik v3** - Proxy reverso com SSL automatico
+- **Portainer** - Interface de gerenciamento
+- **pgAdmin 4** - Administracao PostgreSQL
+- **Let's Encrypt** - Certificados SSL gratuitos
+- **Sistema SMTP** - Envio seguro de credenciais
+- **Scripts de Manutencao** - Atualizacao, diagnostico, limpeza
