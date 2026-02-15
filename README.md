@@ -403,13 +403,17 @@ git checkout main
 git pull origin main
 ```
 
-Apos atualizar os scripts, se quiser aplicar uma nova versao do n8n:
+Apos atualizar os scripts, aplique as mudancas nos servicos:
 
 ```bash
+# Atualizar n8n para uma nova versao 2.x
 sudo ./update-n8n.sh
+
+# Ou se estiver migrando de n8n v1 para v2
+sudo ./upgrade-n8n-v2.sh
 ```
 
-**Importante**: O `git pull` atualiza apenas os scripts e YAMLs. Os servicos em execucao (containers) nao sao afetados. Para aplicar mudancas nos servicos, use os scripts de atualizacao ou redeploy manual.
+**Importante**: O `git pull` atualiza apenas os scripts e YAMLs. Os servicos em execucao (containers) nao sao afetados automaticamente. Voce precisa rodar o script de atualizacao ou upgrade para aplicar as mudancas nos containers.
 
 ### Se o projeto ainda nao foi clonado:
 
