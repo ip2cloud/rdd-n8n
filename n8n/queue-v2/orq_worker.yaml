@@ -1,10 +1,10 @@
 version: "3.7"
 
 services:
-  n8nv2_webhook_ip2:
-    image: n8nio/n8n:1.123.7
+  n8nv2_worker_ip2:
+    image: n8nio/n8n:2.6.4
     hostname: "{{.Service.Name}}.{{.Task.Slot}}"
-    command: webhook
+    command: worker --concurrency=10
     networks:
       - network_swarm_public
       - network_swarm_databases
@@ -19,7 +19,6 @@ services:
       - GENERIC_TIMEZONE=America/Sao_Paulo
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
       - NODE_OPTIONS="--max_old_space_size=4096"
-      - OFFLOAD_MANUAL_EXECUTIONS_TO_WORKES=true
 
       # --- Banco de Dados (PostgreSQL) ---
       - DB_TYPE=postgresdb
@@ -77,7 +76,7 @@ services:
       - N8N_AI_PROVIDER=openai
       - N8N_AI_OPENAI_API_KEY=
 
-      # --- Task Runner (v2-ready) ---
+      # --- Task Runner (internal mode) ---
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=internal
@@ -89,18 +88,10 @@ services:
       placement:
         constraints:
           - node.role == manager
-      labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.n8n-webhook.rule=Host(`webhook.${DOMAIN}`)"
-        - "traefik.http.routers.n8n-webhook.entrypoints=websecure"
-        - "traefik.http.routers.n8n-webhook.tls=true"
-        - "traefik.http.routers.n8n-webhook.tls.certresolver=letsencrypt"
-        - "traefik.http.services.n8n-webhook.loadbalancer.server.port=5678"
-        - "traefik.http.routers.n8n-webhook.service=n8n-webhook"
       resources:
         limits:
           cpus: "1"
-          memory: 1024M
+          memory: 4096M
       update_config:
         parallelism: 1
         delay: 30s
