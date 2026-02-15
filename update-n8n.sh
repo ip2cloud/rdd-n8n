@@ -34,28 +34,53 @@ echo ""
 get_n8n_versions() {
     echo "🔍 Buscando versões do n8n no Docker Hub..."
     
-    # Tentar buscar via API do Docker Hub
-    local response=$(curl -s "https://registry.hub.docker.com/v2/repositories/n8nio/n8n/tags/?page_size=30" 2>/dev/null)
-    
-    if [[ -n "$response" ]]; then
-        # Extrair versões numéricas e ordenar
-        local versions=$(echo "$response" | grep -o '"name":"[0-9]\+\.[0-9]\+\.[0-9]\+"' | sed 's/"name":"//g' | sed 's/"//g' | sort -V -r | head -15)
-        
-        if [[ -n "$versions" ]]; then
-            echo "$versions"
+    # Tentar buscar via API do Docker Hub (múltiplas páginas para garantir versões 2.x)
+    local all_versions=""
+    local page=1
+    local max_pages=5
+
+    while [[ $page -le $max_pages ]]; do
+        local response=$(curl -s "https://registry.hub.docker.com/v2/repositories/n8nio/n8n/tags/?page_size=100&page=$page" 2>/dev/null)
+
+        if [[ -z "$response" ]]; then
+            break
+        fi
+
+        local page_versions=$(echo "$response" | grep -o '"name":"[0-9]\+\.[0-9]\+\.[0-9]\+"' | sed 's/"name":"//g' | sed 's/"//g')
+
+        if [[ -z "$page_versions" ]]; then
+            break
+        fi
+
+        all_versions="$all_versions
+$page_versions"
+
+        # Verificar se há próxima página
+        echo "$response" | grep -q '"next":null' && break
+        ((page++))
+    done
+
+    if [[ -n "$all_versions" ]]; then
+        # Filtrar apenas versões 2.x+ e ordenar
+        local filtered=$(echo "$all_versions" | grep -E '^[2-9]\.' | sort -V -r | head -15)
+
+        if [[ -n "$filtered" ]]; then
+            echo "$filtered"
             return
         fi
     fi
-    
+
     # Fallback: versões fixas se API falhar
-    echo "1.103.0
-1.102.0
-1.101.0
-1.100.1
-1.100.0
-1.99.0
-1.98.0
-latest"
+    echo "2.6.4
+2.6.3
+2.6.2
+2.6.1
+2.6.0
+2.5.0
+2.4.3
+2.4.2
+2.4.1
+2.4.0"
 }
 
 # Mostrar versão atual
@@ -120,19 +145,19 @@ deploy_services() {
     
     # Deploy n8n Editor primeiro
     echo "→ Atualizando n8n Editor..."
-    docker stack deploy -c n8n/queue/orq_editor.yaml n8n_editor
+    docker stack deploy -c n8n/queue-v2/orq_editor.yaml n8n_editor
     sleep 30
     echo "✅ n8n Editor atualizado"
-    
+
     # Deploy n8n Webhook
     echo "→ Atualizando n8n Webhook..."
-    docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook
+    docker stack deploy -c n8n/queue-v2/orq_webhook.yaml n8n_webhook
     sleep 15
     echo "✅ n8n Webhook atualizado"
-    
+
     # Deploy n8n Worker
     echo "→ Atualizando n8n Worker..."
-    docker stack deploy -c n8n/queue/orq_worker.yaml n8n_worker
+    docker stack deploy -c n8n/queue-v2/orq_worker.yaml n8n_worker
     sleep 15
     echo "✅ n8n Worker atualizado"
 }
@@ -169,7 +194,7 @@ main() {
             read -p "Selecione a versão (número ou 0 para manual): " CHOICE
             
             if [[ "$CHOICE" == "0" ]]; then
-                read -p "Digite a versão desejada (ex: 1.100.1): " NEW_VERSION
+                read -p "Digite a versão desejada (ex: 2.6.4): " NEW_VERSION
                 break
             elif [[ "$CHOICE" =~ ^[0-9]+$ ]] && [[ -n "${version_array[$CHOICE]}" ]]; then
                 NEW_VERSION="${version_array[$CHOICE]}"
@@ -180,7 +205,7 @@ main() {
         done
     else
         # Versão manual
-        read -p "Digite a versão desejada (ex: 1.100.1): " NEW_VERSION
+        read -p "Digite a versão desejada (ex: 2.6.4): " NEW_VERSION
     fi
     
     echo ""
@@ -202,9 +227,9 @@ main() {
     echo "🔄 Iniciando atualização para n8nio/n8n:$NEW_VERSION..."
     
     # Atualizar arquivos YAML
-    update_yaml_version "n8n/queue/orq_editor.yaml" "$NEW_VERSION" || exit 1
-    update_yaml_version "n8n/queue/orq_webhook.yaml" "$NEW_VERSION" || exit 1
-    update_yaml_version "n8n/queue/orq_worker.yaml" "$NEW_VERSION" || exit 1
+    update_yaml_version "n8n/queue-v2/orq_editor.yaml" "$NEW_VERSION" || exit 1
+    update_yaml_version "n8n/queue-v2/orq_webhook.yaml" "$NEW_VERSION" || exit 1
+    update_yaml_version "n8n/queue-v2/orq_worker.yaml" "$NEW_VERSION" || exit 1
     
     echo ""
     
