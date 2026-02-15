@@ -269,7 +269,15 @@ echo ""
 print_info "Iniciando instalação..."
 echo ""
 
-# 1. Atualizar sistema
+# 1. Silenciar logs do kernel no console (evita poluir o terminal com mensagens de rede do Docker)
+print_info "Configurando kernel logs..."
+sysctl -w kernel.printk="3 4 1 3" >/dev/null 2>&1
+if ! grep -q "kernel.printk" /etc/sysctl.conf 2>/dev/null; then
+    echo "kernel.printk = 3 4 1 3" >> /etc/sysctl.conf
+fi
+print_success "Kernel logs configurados"
+
+# 2. Atualizar sistema
 print_info "Atualizando sistema..."
 apt-get update -qq >/dev/null 2>&1
 apt-get install -y curl wget nano htop >/dev/null 2>&1
