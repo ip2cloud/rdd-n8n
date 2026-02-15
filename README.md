@@ -296,6 +296,20 @@ docker service logs n8n_editor_n8nv2_editor_ip2
 2. Aguarde ~2 minutos para todos os servicos subirem
 3. Verifique no Portainer se todos estao rodando
 
+### Console poluido com logs de rede (bridge, veth, docker)?
+
+Se ao digitar no terminal aparecem mensagens como `br0: port X entered blocking state`, `device veth entered promiscuous mode`, etc., o kernel esta despejando logs de rede no console. Para resolver:
+
+```bash
+# Aplicar imediatamente
+sudo sysctl -w kernel.printk="3 4 1 3"
+
+# Persistir apos reboot
+echo "kernel.printk = 3 4 1 3" | sudo tee -a /etc/sysctl.conf
+```
+
+**Nota**: Novas instalacoes ja incluem essa correcao automaticamente.
+
 ### Portainer nao acessa?
 
 ```bash
