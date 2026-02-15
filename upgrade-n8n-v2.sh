@@ -9,9 +9,6 @@
 TARGET_VERSION="2.6.4"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 BACKUP_DIR="backups"
-YAML_EDITOR="n8n/queue/orq_editor.yaml"
-YAML_WEBHOOK="n8n/queue/orq_webhook.yaml"
-YAML_WORKER="n8n/queue/orq_worker.yaml"
 V2_EDITOR="n8n/queue-v2/orq_editor.yaml"
 V2_WEBHOOK="n8n/queue-v2/orq_webhook.yaml"
 V2_WORKER="n8n/queue-v2/orq_worker.yaml"
@@ -73,15 +70,6 @@ if [[ "$CURRENT_VERSION" =~ ^2\. ]]; then
     exit 1
 fi
 
-# Verifica YAMLs atuais existem
-for yaml_file in "$YAML_EDITOR" "$YAML_WEBHOOK" "$YAML_WORKER"; do
-    if [ ! -f "$yaml_file" ]; then
-        echo "❌ Arquivo $yaml_file não encontrado"
-        exit 1
-    fi
-done
-echo "✅ Arquivos YAML v1 encontrados"
-
 # Verifica YAMLs v2 existem
 for v2_file in "$V2_EDITOR" "$V2_WEBHOOK" "$V2_WORKER"; do
     if [ ! -f "$v2_file" ]; then
@@ -121,7 +109,7 @@ echo "╚═══════════════════════�
 echo ""
 echo "⚠️  IMPORTANTE:"
 echo "   • Um backup do PostgreSQL será criado antes do upgrade"
-echo "   • Os arquivos YAML e .env serão backupeados"
+echo "   • O arquivo .env será backupeado"
 echo "   • Em caso de falha, instruções de rollback serão exibidas"
 echo ""
 
@@ -172,16 +160,10 @@ echo "✅ Backup do PostgreSQL criado com sucesso ($BACKUP_SIZE)"
 echo ""
 
 ########################################
-# 2.4 Backup dos YAMLs e .env
+# 2.4 Backup do .env
 ########################################
 
 echo "📋 Criando backup dos arquivos de configuração..."
-
-# Backup dos YAMLs
-for yaml_file in "$YAML_EDITOR" "$YAML_WEBHOOK" "$YAML_WORKER"; do
-    cp "$yaml_file" "${yaml_file}.backup.${TIMESTAMP}"
-    echo "   ✅ ${yaml_file}.backup.${TIMESTAMP}"
-done
 
 # Backup do .env
 cp .env ".env.backup.${TIMESTAMP}"
@@ -190,33 +172,7 @@ echo "   ✅ .env.backup.${TIMESTAMP}"
 echo ""
 
 ########################################
-# 2.5 Substituir YAMLs pelos da v2
-########################################
-
-echo "📝 Atualizando arquivos YAML para v2..."
-
-# Verifica se os YAMLs v2 existem
-for v2_file in "$V2_EDITOR" "$V2_WEBHOOK" "$V2_WORKER"; do
-    if [ ! -f "$v2_file" ]; then
-        echo "❌ Arquivo $v2_file não encontrado"
-        echo "   Execute: sudo ./rollback-n8n-v2.sh"
-        exit 1
-    fi
-done
-
-cp "$V2_EDITOR" "$YAML_EDITOR"
-echo "   ✅ orq_editor.yaml → v2"
-
-cp "$V2_WEBHOOK" "$YAML_WEBHOOK"
-echo "   ✅ orq_webhook.yaml → v2"
-
-cp "$V2_WORKER" "$YAML_WORKER"
-echo "   ✅ orq_worker.yaml → v2"
-
-echo ""
-
-########################################
-# 2.6 Pull da imagem
+# 2.5 Pull da imagem
 ########################################
 
 echo "🐳 Baixando imagem n8nio/n8n:${TARGET_VERSION}..."
@@ -239,10 +195,10 @@ fi
 echo ""
 
 ########################################
-# 2.7 Export de variáveis e deploy
+# 2.6 Export de variáveis e deploy
 ########################################
 
-echo "🚀 Iniciando deploy dos serviços..."
+echo "🚀 Iniciando deploy dos serviços com YAMLs v2..."
 echo ""
 
 # Exportar variáveis necessárias
@@ -250,7 +206,7 @@ export DOMAIN DATABASE DATABASE_PASSWORD N8N_ENCRYPTION_KEY INITIAL_ADMIN_EMAIL 
 
 # Deploy n8n Editor primeiro
 echo "   → [1/3] Deployando n8n Editor..."
-docker stack deploy -c "$YAML_EDITOR" n8n_editor
+docker stack deploy -c "$V2_EDITOR" n8n_editor
 echo "   ⏳ Aguardando 30s para o Editor inicializar..."
 sleep 30
 echo "   ✅ n8n Editor deployado"
@@ -258,7 +214,7 @@ echo ""
 
 # Deploy n8n Webhook
 echo "   → [2/3] Deployando n8n Webhook..."
-docker stack deploy -c "$YAML_WEBHOOK" n8n_webhook
+docker stack deploy -c "$V2_WEBHOOK" n8n_webhook
 echo "   ⏳ Aguardando 15s para o Webhook inicializar..."
 sleep 15
 echo "   ✅ n8n Webhook deployado"
@@ -266,14 +222,14 @@ echo ""
 
 # Deploy n8n Worker
 echo "   → [3/3] Deployando n8n Worker..."
-docker stack deploy -c "$YAML_WORKER" n8n_worker
+docker stack deploy -c "$V2_WORKER" n8n_worker
 echo "   ⏳ Aguardando 15s para o Worker inicializar..."
 sleep 15
 echo "   ✅ n8n Worker deployado"
 echo ""
 
 ########################################
-# 2.8 Health check
+# 2.7 Health check
 ########################################
 
 echo "🏥 Verificando saúde dos serviços..."
@@ -327,7 +283,7 @@ if ! $HEALTHY; then
 fi
 
 ########################################
-# 2.9 Sumário final
+# 2.8 Sumário final
 ########################################
 
 echo "╔══════════════════════════════════════════╗"
