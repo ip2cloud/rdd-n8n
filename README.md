@@ -3,6 +3,7 @@
 ## Instalacao Completamente Automatica em Uma Execucao
 
 ### O que e instalado automaticamente:
+
 - Docker Swarm + Portainer + Traefik (SSL automatico)
 - PostgreSQL 16 + Redis 7
 - n8n v2 completo (editor + webhook + worker) em modo queue
@@ -61,21 +62,25 @@ traefik.SEU-DOMINIO.com  -> IP_DO_SERVIDOR (opcional)
 ## URLs de Acesso
 
 ### n8n (Automacao de Workflows)
+
 - **Editor**: https://fluxos.SEU-DOMINIO.com
 - **Webhook**: https://webhook.SEU-DOMINIO.com
 - **Credenciais**: Mostradas no final da instalacao (salvas em `.env`)
 
 ### Portainer (Monitoramento Docker)
+
 - **URL**: https://IP_DO_SERVIDOR:9443
 - **Primeiro acesso**: Defina senha do admin (10 minutos apos instalacao)
 - **Funcao**: Monitorar containers e servicos
 
 ### Traefik (Dashboard do Proxy)
+
 - **URL**: https://traefik.SEU-DOMINIO.com
 - **Login**: admin / senha_gerada_automaticamente
 - **Funcao**: Monitoramento do proxy reverso e SSL
 
 ### pgAdmin (Administracao PostgreSQL)
+
 - **URL**: http://IP_DO_SERVIDOR:4040
 - **Login**: mesmo email da instalacao / senha_gerada_automaticamente
 - **Funcao**: Interface web para administracao do PostgreSQL
@@ -95,6 +100,7 @@ traefik.SEU-DOMINIO.com  -> IP_DO_SERVIDOR (opcional)
 ## Sistema de Envio de Credenciais
 
 ### Configuracao Segura
+
 - **Configuracao externa**: Credenciais SMTP fora do codigo fonte
 - **Arquivo protegido**: `/etc/n8n-installer/smtp.conf` com permissoes 600
 - **Fallback inteligente**: Se email falhar, exibe na tela
@@ -103,17 +109,20 @@ traefik.SEU-DOMINIO.com  -> IP_DO_SERVIDOR (opcional)
 ### Como configurar:
 
 #### 1. Configure o SMTP (uma vez apenas):
+
 ```bash
 sudo ./setup-smtp.sh
 ```
 
 #### 2. Durante a instalacao:
+
 - Se SMTP configurado: pergunta se quer email
 - Se SMTP nao configurado: apenas credenciais na tela
 - Credenciais sempre exibidas na tela tambem
 - Arquivo `.env` sempre salvo localmente
 
 ### Configuracao Manual (alternativa):
+
 ```bash
 sudo mkdir -p /etc/n8n-installer
 sudo tee /etc/n8n-installer/smtp.conf > /dev/null <<EOF
@@ -128,9 +137,11 @@ sudo chmod 600 /etc/n8n-installer/smtp.conf
 ## Scripts Disponiveis
 
 ### Atualizacao do n8n
+
 ```bash
 sudo ./update-n8n.sh
 ```
+
 - Atualiza n8n para qualquer versao 2.x disponivel
 - Busca versoes automaticamente no Docker Hub
 - Interface interativa com selecao por menu
@@ -139,58 +150,72 @@ sudo ./update-n8n.sh
 - Validacao de imagens antes da atualizacao
 
 ### Upgrade para n8n v2 (migracao de v1)
+
 ```bash
 sudo ./upgrade-n8n-v2.sh
 ```
+
 - Migra instalacoes n8n 1.x para v2
 - Backup automatico do banco PostgreSQL
 - Migracao de YAMLs (queue -> queue-v2)
 - Validacao de imagem e health checks
 
 ### Rollback do n8n v2
+
 ```bash
 sudo ./rollback-n8n-v2.sh
 ```
+
 - Reverte upgrade v2 em caso de falha
 - Restaura YAMLs e banco PostgreSQL do backup
 
 ### Configuracao SSL/TLS
+
 ```bash
 sudo ./update-ssl.sh
 ```
+
 - Configura certificados Let's Encrypt automaticamente
 - Atualiza Traefik com resolver SSL
 - Redeploy de todos os servicos com certificados
 - Certificados automaticos para todos os dominios
 
 ### Configuracao SMTP
+
 ```bash
 sudo ./setup-smtp.sh
 ```
+
 - Configura credenciais para envio de email
 - Cria arquivo seguro `/etc/n8n-installer/smtp.conf`
 - Necessario apenas uma vez por servidor
 
 ### Diagnostico e Monitoramento
+
 ```bash
 ./debug.sh
 ```
+
 - Verifica status do Docker Swarm
 - Lista nodes, redes, volumes e stacks
 - Mostra logs dos servicos
 
 ### Limpeza Rapida
+
 ```bash
 ./cleanup.sh
 ```
+
 - Remove stacks principais (traefik, portainer)
 - Limpa sistema Docker
 - Desativa Docker Swarm
 
 ### Desinstalacao Completa
+
 ```bash
 sudo ./uninstall.sh
 ```
+
 - Remove todos os stacks e servicos
 - Apaga volumes (DADOS PERDIDOS!)
 - Desativa Docker Swarm
@@ -247,6 +272,7 @@ source .env
 ## Resolucao de Problemas
 
 ### Script nao executa?
+
 ```bash
 # Corrigir permissoes e quebras de linha
 sed -i 's/\r$//' *.sh
@@ -254,6 +280,7 @@ chmod +x *.sh
 ```
 
 ### Servicos nao sobem?
+
 ```bash
 # Diagnostico completo
 ./debug.sh
@@ -264,11 +291,13 @@ docker service logs n8n_editor_n8nv2_editor_ip2
 ```
 
 ### n8n nao acessa?
+
 1. Verifique se o DNS esta configurado
 2. Aguarde ~2 minutos para todos os servicos subirem
 3. Verifique no Portainer se todos estao rodando
 
 ### Portainer nao acessa?
+
 ```bash
 # Verificar se esta rodando
 docker service ls | grep portainer
@@ -287,16 +316,19 @@ docker stack deploy -c portainer/portainer.yaml portainer
 ## Desinstalacao
 
 ### Limpeza Rapida (mantem dados)
+
 ```bash
 ./cleanup.sh
 ```
 
 ### Remocao Completa (apaga tudo)
+
 ```bash
 sudo ./uninstall.sh
 ```
 
 ### Reinstalar
+
 ```bash
 # Apos desinstalar, reinstale com:
 sudo ./install-simple.sh
@@ -307,9 +339,9 @@ sudo ./install-simple.sh
 ## Requisitos do Sistema
 
 - **OS**: Debian/Ubuntu (64-bit)
-- **RAM**: Minimo 2GB (recomendado 4GB+)
-- **CPU**: 1 core (recomendado 2+ cores)
-- **Disco**: 10GB+ livres
+- **RAM**: Minimo 4GB (recomendado 8GB+)
+- **CPU**: 2 core (recomendado 2+ cores)
+- **Disco**: 50GB+ livres
 - **Usuario**: root ou sudo
 - **Dominio**: Um dominio valido configurado
 
@@ -318,6 +350,7 @@ sudo ./install-simple.sh
 ## Proximos Passos Apos Instalacao
 
 ### 1. Configure o DNS
+
 ```
 fluxos.SEU-DOMINIO.com   -> IP_DO_SERVIDOR
 webhook.SEU-DOMINIO.com  -> IP_DO_SERVIDOR
@@ -325,25 +358,31 @@ traefik.SEU-DOMINIO.com  -> IP_DO_SERVIDOR (opcional)
 ```
 
 ### 2. Configure SSL (Recomendado)
+
 ```bash
 sudo ./update-ssl.sh
 ```
+
 - Configura certificados Let's Encrypt automaticamente
 - Aguarde ~2 minutos para emissao dos certificados
 
 ### 3. Aguarde ~2 minutos
+
 Os servicos precisam de um tempo para inicializar completamente.
 
 ### 4. Acesse o n8n
+
 - URL: https://fluxos.SEU-DOMINIO.com
 - Use as credenciais mostradas no final da instalacao
 
 ### 5. Monitore no Portainer
+
 - URL: https://IP_DO_SERVIDOR:9443
 - Crie senha do admin no primeiro acesso
 - IMPORTANTE: Acesse em ate 10 minutos apos instalacao
 
 ### 6. Acesse pgAdmin (se necessario)
+
 - URL: http://IP_DO_SERVIDOR:4040
 - Login: email da instalacao / senha gerada automaticamente
 
@@ -373,6 +412,7 @@ sudo ./update-n8n.sh
 **Importante**: O `git pull` atualiza apenas os scripts e YAMLs. Os servicos em execucao (containers) nao sao afetados. Para aplicar mudancas nos servicos, use os scripts de atualizacao ou redeploy manual.
 
 ### Se o projeto ainda nao foi clonado:
+
 ```bash
 git clone <url-do-repositorio>
 cd rdd-n8n
