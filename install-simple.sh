@@ -377,18 +377,18 @@ if [[ ! "$AUTO_DEPLOY" =~ ^[Nn]$ ]]; then
     sleep 5
     print_success "Redis instalado"
     
-    # Deploy n8n (com delay entre editor e demais)
-    print_info "Instalando n8n Editor..."
-    docker stack deploy -c n8n/queue/orq_editor.yaml n8n_editor >/dev/null 2>&1
-    print_success "n8n Editor instalado"
-    
+    # Deploy n8n v2 (com delay entre editor e demais)
+    print_info "Instalando n8n v2 Editor..."
+    docker stack deploy -c n8n/queue-v2/orq_editor.yaml n8n_editor >/dev/null 2>&1
+    print_success "n8n v2 Editor instalado"
+
     print_info "Aguardando 1 minuto para o Editor inicializar..."
     sleep 60
-    
-    print_info "Instalando n8n Webhook e Worker..."
-    docker stack deploy -c n8n/queue/orq_webhook.yaml n8n_webhook >/dev/null 2>&1
-    docker stack deploy -c n8n/queue/orq_worker.yaml n8n_worker >/dev/null 2>&1
-    print_success "n8n completo instalado"
+
+    print_info "Instalando n8n v2 Webhook e Worker..."
+    docker stack deploy -c n8n/queue-v2/orq_webhook.yaml n8n_webhook >/dev/null 2>&1
+    docker stack deploy -c n8n/queue-v2/orq_worker.yaml n8n_worker >/dev/null 2>&1
+    print_success "n8n v2 completo instalado"
     
     # Deploy pgAdmin
     print_info "Instalando pgAdmin..."
