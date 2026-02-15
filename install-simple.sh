@@ -24,7 +24,7 @@ show_final_info() {
     echo ""
     echo "🌐 URLs DOS SERVIÇOS:"
     echo "   n8n Editor: https://fluxos.$domain"
-    echo "   n8n Webhook: https://webhook.$domain" 
+    echo "   n8n Webhook: https://webhook.$domain"
     echo "   pgAdmin: http://$server_ip:4040"
     echo "   Portainer: https://$server_ip:9443"
     echo "   Traefik: https://traefik.$domain"
@@ -67,7 +67,7 @@ clear
 echo "╔══════════════════════════════════════════╗"
 echo "║     INSTALAÇÃO AUTOMÁTICA DO N8N         ║"
 echo "║     Docker + PostgreSQL + Redis          ║"
-echo "║           Versão FINAL v4                ║"
+echo "║      Versão FINAL v5 - n8n v2            ║"
 echo "╔══════════════════════════════════════════╝"
 echo ""
 
@@ -394,7 +394,7 @@ if [[ ! "$AUTO_DEPLOY" =~ ^[Nn]$ ]]; then
     print_info "Instalando pgAdmin..."
     docker stack deploy -c pgadmin/pgadmin.yaml pgadmin >/dev/null 2>&1
     print_success "pgAdmin instalado"
-    
+
     AUTO_DEPLOYED=true
 else
     AUTO_DEPLOYED=false
@@ -418,8 +418,8 @@ fi
 echo ""
 echo "╔══════════════════════════════════════════╗"
 echo "║         INSTALAÇÃO CONCLUÍDA!            ║"
-echo "║           Versão: 2025.07.17             ║"
-echo "║             Versão FINAL v4              ║"
+echo "║      Versão FINAL v5 - n8n v2              ║"
+echo "║         100% Automática                  ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 
@@ -496,7 +496,7 @@ echo ""
 echo "DEBUG: Verificando AUTO_DEPLOYED: $AUTO_DEPLOYED"
 if [[ "$AUTO_DEPLOYED" == "true" ]]; then
     echo "✅ APLICAÇÕES INSTALADAS AUTOMATICAMENTE:"
-    echo "   PostgreSQL + Redis + n8n (modo queue) + pgAdmin"
+    echo "   PostgreSQL + Redis + n8n v2 (modo queue) + pgAdmin"
     echo ""
     echo "2️⃣ CONFIGURE O DNS:"
     echo "   fluxos.$DOMAIN → $SERVER_IP"
