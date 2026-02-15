@@ -349,6 +349,39 @@ Os servicos precisam de um tempo para inicializar completamente.
 
 ---
 
+## Atualizar o Projeto (Sincronizar com o Repositorio)
+
+Se voce ja tem o projeto instalado e quer atualizar os scripts para a versao mais recente:
+
+```bash
+# Entrar na pasta do projeto
+cd rdd-n8n
+
+# Mudar para a branch main (versao estavel)
+git checkout main
+
+# Baixar as atualizacoes
+git pull origin main
+```
+
+Apos atualizar os scripts, se quiser aplicar uma nova versao do n8n:
+
+```bash
+sudo ./update-n8n.sh
+```
+
+**Importante**: O `git pull` atualiza apenas os scripts e YAMLs. Os servicos em execucao (containers) nao sao afetados. Para aplicar mudancas nos servicos, use os scripts de atualizacao ou redeploy manual.
+
+### Se o projeto ainda nao foi clonado:
+```bash
+git clone <url-do-repositorio>
+cd rdd-n8n
+chmod +x *.sh
+sudo ./install-simple.sh
+```
+
+---
+
 ## Estrutura do Projeto
 
 ```
