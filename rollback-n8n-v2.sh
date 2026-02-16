@@ -8,6 +8,7 @@
 YAML_EDITOR="n8n/queue/orq_editor.yaml"
 YAML_WEBHOOK="n8n/queue/orq_webhook.yaml"
 YAML_WORKER="n8n/queue/orq_worker.yaml"
+BACKUP_DIR="backups"
 
 echo "╔══════════════════════════════════════════╗"
 echo "║     ROLLBACK N8N v2 → VERSÃO ANTERIOR    ║"
@@ -26,37 +27,43 @@ if ! docker info >/dev/null 2>&1; then
     exit 1
 fi
 
-# Encontrar o backup mais recente
-LATEST_BACKUP=$(ls -t ${YAML_EDITOR}.backup.* 2>/dev/null | head -1)
+# Encontrar o backup mais recente pelo .env.backup ou SQL backup
+LATEST_ENV_BACKUP=$(ls -t .env.backup.* 2>/dev/null | head -1)
+LATEST_SQL_BACKUP=$(ls -t ${BACKUP_DIR}/n8n_backup_*.sql 2>/dev/null | head -1)
 
-if [[ -z "$LATEST_BACKUP" ]]; then
+if [[ -z "$LATEST_ENV_BACKUP" ]] && [[ -z "$LATEST_SQL_BACKUP" ]]; then
     echo "❌ Nenhum backup encontrado"
     echo "   Nao e possivel fazer rollback sem backups"
     exit 1
 fi
 
-# Extrair timestamp do backup
-TIMESTAMP=$(echo "$LATEST_BACKUP" | sed "s|${YAML_EDITOR}.backup.||")
+# Extrair timestamp do backup do .env
+if [[ -n "$LATEST_ENV_BACKUP" ]]; then
+    TIMESTAMP=$(echo "$LATEST_ENV_BACKUP" | sed 's|.env.backup.||')
+fi
 
-# Verificar se todos os backups existem
+# Verificar que os YAMLs v1 existem para rollback
 MISSING=false
-for backup_file in "${YAML_EDITOR}.backup.${TIMESTAMP}" "${YAML_WEBHOOK}.backup.${TIMESTAMP}" "${YAML_WORKER}.backup.${TIMESTAMP}" ".env.backup.${TIMESTAMP}"; do
-    if [[ ! -f "$backup_file" ]]; then
-        echo "❌ Backup nao encontrado: $backup_file"
+for yaml_file in "$YAML_EDITOR" "$YAML_WEBHOOK" "$YAML_WORKER"; do
+    if [[ ! -f "$yaml_file" ]]; then
+        echo "❌ YAML v1 nao encontrado: $yaml_file"
         MISSING=true
     fi
 done
 
 if $MISSING; then
-    echo "   Nao e possivel fazer rollback com backups incompletos"
+    echo "   Nao e possivel fazer rollback sem os YAMLs originais"
     exit 1
 fi
 
-# Detectar versao do backup
-BACKUP_VERSION=$(grep -o 'image: n8nio/n8n:[^ ]*' "${YAML_EDITOR}.backup.${TIMESTAMP}" | head -1 | sed 's/image: n8nio\/n8n://')
-CURRENT_VERSION=$(grep -o 'image: n8nio/n8n:[^ ]*' "$YAML_EDITOR" | head -1 | sed 's/image: n8nio\/n8n://')
+# Detectar versao do backup (v1) a partir dos YAMLs originais
+BACKUP_VERSION=$(grep -o 'image: n8nio/n8n:[^ ]*' "$YAML_EDITOR" | head -1 | sed 's/image: n8nio\/n8n://')
+CURRENT_VERSION=$(docker service ls --format "{{.Name}} {{.Image}}" 2>/dev/null | grep n8n_editor | head -1 | awk '{print $2}' | sed 's/.*://')
 
-echo "📋 Backup encontrado: ${TIMESTAMP}"
+echo "📋 Backups encontrados:"
+[[ -n "$LATEST_ENV_BACKUP" ]] && echo "   .env backup:   $LATEST_ENV_BACKUP"
+[[ -n "$LATEST_SQL_BACKUP" ]] && echo "   SQL backup:     $LATEST_SQL_BACKUP"
+echo ""
 echo "   Versao atual:     ${CURRENT_VERSION:-desconhecida}"
 echo "   Versao do backup: ${BACKUP_VERSION:-desconhecida}"
 echo ""
@@ -86,17 +93,17 @@ echo ""
 
 echo "📋 Restaurando arquivos de backup..."
 
-cp "${YAML_EDITOR}.backup.${TIMESTAMP}" "$YAML_EDITOR"
-echo "   ✅ orq_editor.yaml restaurado"
+# Restaurar .env do backup se disponivel
+if [[ -n "$LATEST_ENV_BACKUP" ]]; then
+    cp "$LATEST_ENV_BACKUP" ".env"
+    echo "   ✅ .env restaurado de $LATEST_ENV_BACKUP"
+else
+    echo "   ⚠️  Nenhum backup do .env encontrado, usando .env atual"
+fi
 
-cp "${YAML_WEBHOOK}.backup.${TIMESTAMP}" "$YAML_WEBHOOK"
-echo "   ✅ orq_webhook.yaml restaurado"
-
-cp "${YAML_WORKER}.backup.${TIMESTAMP}" "$YAML_WORKER"
-echo "   ✅ orq_worker.yaml restaurado"
-
-cp ".env.backup.${TIMESTAMP}" ".env"
-echo "   ✅ .env restaurado"
+# Os YAMLs v1 originais em n8n/queue/ permanecem intactos
+# (o upgrade usa n8n/queue-v2/ sem modificar os originais)
+echo "   ✅ YAMLs v1 originais intactos em n8n/queue/"
 
 echo ""
 
@@ -107,9 +114,7 @@ export DOMAIN DATABASE DATABASE_PASSWORD N8N_ENCRYPTION_KEY INITIAL_ADMIN_EMAIL 
 # 3. Restaurar banco de dados
 ########################################
 
-LATEST_SQL=$(ls -t backups/n8n_backup_*.sql 2>/dev/null | head -1)
-
-if [[ -n "$LATEST_SQL" ]]; then
+if [[ -n "$LATEST_SQL_BACKUP" ]]; then
     echo "🗄️  Restaurando banco de dados..."
     echo "   O n8n v2 altera o banco ao subir, entao a restauracao e obrigatoria."
     echo ""
@@ -122,8 +127,8 @@ if [[ -n "$LATEST_SQL" ]]; then
         docker exec "$POSTGRES_CONTAINER" psql -U postgres -c "DROP DATABASE IF EXISTS \"${DATABASE:-n8n}\";" >/dev/null 2>&1
         docker exec "$POSTGRES_CONTAINER" psql -U postgres -c "CREATE DATABASE \"${DATABASE:-n8n}\";" >/dev/null 2>&1
 
-        echo "   → Restaurando backup: $LATEST_SQL"
-        docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d "${DATABASE:-n8n}" < "$LATEST_SQL" >/dev/null 2>&1
+        echo "   → Restaurando backup: $LATEST_SQL_BACKUP"
+        docker exec -i "$POSTGRES_CONTAINER" psql -U postgres -d "${DATABASE:-n8n}" < "$LATEST_SQL_BACKUP" >/dev/null 2>&1
 
         if [[ $? -eq 0 ]]; then
             echo "   ✅ Banco restaurado com sucesso"
