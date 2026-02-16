@@ -33,6 +33,9 @@ The project uses a **fully automated approach** with optional email integration:
 - `setup-smtp.sh` - Configure SMTP for secure credential delivery
 - `deploy-api.sh` - API-based deployment alternative (if needed)
 
+### Backup
+- `backup.sh` - Backup do banco de dados n8n + variáveis de ambiente (manual ou automático via cron)
+
 ### Diagnostic & Maintenance
 - `debug.sh` - Comprehensive diagnostic script
 - `cleanup.sh` - Quick cleanup (remove stacks, clean system)
@@ -206,6 +209,41 @@ docker system prune -f
 docker swarm leave --force
 ```
 
+### Backup n8n
+```bash
+# Execução manual (interativo - sugere configurar cron na 1ª vez)
+sudo ./backup.sh
+
+# Execução automática (usado pelo cron)
+sudo ./backup.sh --auto
+
+# O que é salvo:
+# - .env (variáveis de ambiente)
+# - smtp.conf (configuração SMTP, se existir)
+# - Configuração dos serviços n8n em execução (docker service inspect)
+# - pg_dump do banco de dados n8n (formato custom, comprimido)
+
+# Estrutura do backup:
+# backups/
+# ├── YYYYMMDD_HHMMSS/
+# │   ├── env_backup.env
+# │   ├── smtp.conf (se existir)
+# │   ├── services/
+# │   │   ├── n8n_editor.json / .txt
+# │   │   ├── n8n_webhook.json / .txt
+# │   │   └── n8n_worker.json / .txt
+# │   ├── n8n_backup.dump
+# │   └── n8n_dump.log
+# └── logs/
+#     └── backup_YYYYMMDD_HHMMSS.log
+
+# Retenção: 15 backups mais recentes, 30 logs mais recentes
+# Cron: configurável na 1ª execução (horário personalizável)
+
+# Restaurar banco n8n:
+# docker exec -i CONTAINER pg_restore -U postgres -d DATABASE --clean < n8n_backup.dump
+```
+
 ### Credential Management
 ```bash
 # View all credentials
@@ -286,6 +324,17 @@ sudo ./install-simple.sh  # Just run installer again
 - **Result**: User gets fresh 5-minute window after installation completes
 - **Benefit**: Can monitor installation AND have time to configure admin password
 - **Why scaling**: More elegant than `--force`, ensures complete container recreation
+
+### Backup System Notes
+- **Script**: `backup.sh` - backup focado exclusivamente no n8n
+- **Escopo**: banco de dados n8n (pg_dump), .env, smtp.conf, configuração dos serviços Docker
+- **Configuração Docker**: capturada via `docker service inspect` (reflete o estado real em execução)
+- **Agendamento**: na 1ª execução manual, sugere configurar cron automático diário
+- **Cron**: executa `backup.sh --auto` (sem interação, sem cores, grava tudo em log)
+- **Logs**: cada execução gera `backups/logs/backup_YYYYMMDD_HHMMSS.log`
+- **Status**: execuções seguintes mostram status do cron e resultado do último backup automático
+- **Retenção**: mantém 15 backups e 30 logs mais recentes (rotação automática)
+- **Gerenciamento**: em execuções interativas, permite alterar horário ou remover o cron
 
 ### Update System Notes
 - **update-n8n.sh**: Interactive version selector with Docker Hub integration

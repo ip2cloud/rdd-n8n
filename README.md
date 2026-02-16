@@ -190,6 +190,22 @@ sudo ./setup-smtp.sh
 - Cria arquivo seguro `/etc/n8n-installer/smtp.conf`
 - Necessario apenas uma vez por servidor
 
+### Backup do n8n
+
+```bash
+sudo ./backup.sh
+```
+
+- Backup do banco de dados n8n (pg_dump comprimido)
+- Backup das variaveis de ambiente (.env e smtp.conf)
+- Backup da configuracao dos servicos n8n em execucao (Docker)
+- Na primeira execucao, sugere configurar backup automatico diario via cron
+- Escolha o horario do backup (padrao: 02:00 da madrugada)
+- Retencao automatica dos ultimos 15 backups
+- Log de cada execucao em `backups/logs/`
+- Nas execucoes seguintes, mostra status do cron e resultado do ultimo backup
+- Para restaurar: `docker exec -i CONTAINER pg_restore -U postgres -d DATABASE --clean < n8n_backup.dump`
+
 ### Diagnostico e Monitoramento
 
 ```bash
@@ -445,6 +461,7 @@ sudo ./install-simple.sh
 ```
 rdd-n8n/
 ├── install-simple.sh          # Instalador principal
+├── backup.sh                  # Backup do banco n8n + variaveis (manual/cron)
 ├── update-n8n.sh              # Atualizador de versao (2.x+)
 ├── upgrade-n8n-v2.sh          # Migracao v1 -> v2
 ├── rollback-n8n-v2.sh         # Rollback do upgrade v2
@@ -455,6 +472,8 @@ rdd-n8n/
 ├── uninstall.sh               # Desinstalacao completa
 ├── .env                       # Credenciais (gerado na instalacao)
 ├── smtp.conf.example          # Template SMTP
+├── backups/                   # Backups gerados (15 mais recentes)
+│   └── logs/                  # Logs de cada execucao de backup
 ├── n8n/queue-v2/
 │   ├── orq_editor.yaml        # n8n Editor
 │   ├── orq_webhook.yaml       # n8n Webhook
@@ -479,4 +498,5 @@ rdd-n8n/
 - **pgAdmin 4** - Administracao PostgreSQL
 - **Let's Encrypt** - Certificados SSL gratuitos
 - **Sistema SMTP** - Envio seguro de credenciais
+- **Backup Automatico** - Banco n8n + variaveis com agendamento via cron
 - **Scripts de Manutencao** - Atualizacao, diagnostico, limpeza
