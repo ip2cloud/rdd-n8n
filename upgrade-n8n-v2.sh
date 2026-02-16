@@ -195,18 +195,7 @@ fi
 echo ""
 
 ########################################
-# 2.6 Remover stacks v1 antes do deploy
-########################################
-
-echo "🗑️  Removendo serviços n8n v1 existentes..."
-docker stack rm n8n_editor n8n_webhook n8n_worker 2>/dev/null
-echo "   ⏳ Aguardando serviços pararem..."
-sleep 15
-echo "   ✅ Serviços v1 removidos"
-echo ""
-
-########################################
-# 2.7 Export de variáveis e deploy
+# 2.6 Export de variáveis e deploy
 ########################################
 
 echo "🚀 Iniciando deploy dos serviços com YAMLs v2..."
@@ -240,7 +229,7 @@ echo "   ✅ n8n Worker deployado"
 echo ""
 
 ########################################
-# 2.8 Health check
+# 2.7 Health check
 ########################################
 
 echo "🏥 Verificando saúde dos serviços..."
@@ -294,7 +283,7 @@ if ! $HEALTHY; then
 fi
 
 ########################################
-# 2.9 Sumário final
+# 2.8 Sumário final
 ########################################
 
 echo "╔══════════════════════════════════════════╗"
