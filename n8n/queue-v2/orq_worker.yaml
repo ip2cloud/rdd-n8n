@@ -80,7 +80,7 @@ services:
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
       - N8N_RUNNERS_ENABLED=true
       - N8N_RUNNERS_MODE=internal
-      - NODE_EXCLUDE="[]"
+      - NODES_EXCLUDE="[]"
 
     deploy:
       mode: replicated
