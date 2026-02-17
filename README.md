@@ -447,7 +447,6 @@ error: Your local changes to the following files would be overwritten by merge:
 Isso acontece porque o instalador modifica os arquivos YAML com suas configuracoes (dominio, credenciais, etc). Para resolver, force a sincronizacao com o repositorio:
 
 ```bash
-cd rdd-n8n
 git fetch origin
 git reset --hard origin/main
 ```
