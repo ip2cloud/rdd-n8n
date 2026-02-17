@@ -164,6 +164,15 @@ show_cron_status() {
 ########################################
 
 setup_cron() {
+    # Verificar se crontab está disponível
+    if ! command -v crontab >/dev/null 2>&1; then
+        echo ""
+        print_error "crontab não encontrado no sistema!"
+        echo "   Instale com: apt-get install -y cron && systemctl enable cron && systemctl start cron"
+        echo ""
+        return 1
+    fi
+
     echo ""
     echo "╔══════════════════════════════════════════╗"
     echo "║     AGENDAMENTO DE BACKUP AUTOMÁTICO     ║"
@@ -371,7 +380,11 @@ fi
 TOTAL_SIZE=$(du -sh "$BACKUP_DIR" | cut -f1)
 
 # Verificar se houve erros
-ERRORS=$(grep -c "ERRO:" "$LOG_FILE" 2>/dev/null || echo "0")
+ERRORS=$(grep -c "ERRO:" "$LOG_FILE" 2>/dev/null || true)
+ERRORS=${ERRORS:-0}
+# Garantir que ERRORS é um número válido
+ERRORS=$(echo "$ERRORS" | tr -dc '0-9')
+[ -z "$ERRORS" ] && ERRORS=0
 
 log "========================================="
 log "BACKUP FINALIZADO"
