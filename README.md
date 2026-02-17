@@ -417,6 +417,27 @@ git checkout main
 git pull origin main
 ```
 
+### Erro ao atualizar: "Your local changes would be overwritten"
+
+Se ao rodar `git pull` aparecer o erro abaixo:
+
+```
+error: Your local changes to the following files would be overwritten by merge:
+    n8n/queue/orq_editor.yaml
+    n8n/queue/orq_webhook.yaml
+    n8n/queue/orq_worker.yaml
+```
+
+Isso acontece porque o instalador modifica os arquivos YAML com suas configuracoes (dominio, credenciais, etc). Para resolver, force a sincronizacao com o repositorio:
+
+```bash
+cd rdd-n8n
+git fetch origin
+git reset --hard origin/main
+```
+
+**Nota**: Isso descarta as modificacoes locais nos YAMLs. Apos atualizar, rode o script de atualizacao ou reinstalacao para reaplicar suas configuracoes nos servicos.
+
 Apos atualizar os scripts, aplique as mudancas nos servicos:
 
 ```bash
