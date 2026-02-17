@@ -195,7 +195,41 @@ fi
 echo ""
 
 ########################################
-# 2.6 Export de variáveis e deploy
+# 2.6 Remover stacks v1 antes do deploy
+########################################
+
+echo "🗑️  Removendo serviços n8n v1 existentes..."
+docker stack rm n8n_editor n8n_webhook n8n_worker 2>/dev/null
+
+echo "   ⏳ Aguardando remoção completa dos serviços..."
+MAX_WAIT_RM=120
+ELAPSED_RM=0
+while [[ $ELAPSED_RM -lt $MAX_WAIT_RM ]]; do
+    # Verifica se ainda existe algum serviço n8n no Swarm
+    REMAINING=$(docker service ls --format "{{.Name}}" 2>/dev/null | grep -c "^n8n_" || true)
+    if [[ "$REMAINING" -eq 0 ]]; then
+        break
+    fi
+    echo "   ⏳ Ainda existem $REMAINING serviço(s) n8n... aguardando (${ELAPSED_RM}s/${MAX_WAIT_RM}s)"
+    sleep 5
+    ELAPSED_RM=$((ELAPSED_RM + 5))
+done
+
+# Verificação final — se ainda restarem, força remoção individual
+REMAINING=$(docker service ls --format "{{.Name}}" 2>/dev/null | grep "^n8n_" || true)
+if [[ -n "$REMAINING" ]]; then
+    echo "   ⚠️  Forçando remoção de serviços restantes..."
+    echo "$REMAINING" | while read svc; do
+        docker service rm "$svc" 2>/dev/null
+    done
+    sleep 10
+fi
+
+echo "   ✅ Serviços v1 removidos"
+echo ""
+
+########################################
+# 2.7 Export de variáveis e deploy
 ########################################
 
 echo "🚀 Iniciando deploy dos serviços com YAMLs v2..."
@@ -229,7 +263,7 @@ echo "   ✅ n8n Worker deployado"
 echo ""
 
 ########################################
-# 2.7 Health check
+# 2.8 Health check
 ########################################
 
 echo "🏥 Verificando saúde dos serviços..."
@@ -283,7 +317,7 @@ if ! $HEALTHY; then
 fi
 
 ########################################
-# 2.8 Sumário final
+# 2.9 Sumário final
 ########################################
 
 echo "╔══════════════════════════════════════════╗"
