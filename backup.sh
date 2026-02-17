@@ -164,13 +164,20 @@ show_cron_status() {
 ########################################
 
 setup_cron() {
-    # Verificar se crontab está disponível
+    # Verificar se crontab está disponível, instalar se necessário
     if ! command -v crontab >/dev/null 2>&1; then
         echo ""
-        print_error "crontab não encontrado no sistema!"
-        echo "   Instale com: apt-get install -y cron && systemctl enable cron && systemctl start cron"
-        echo ""
-        return 1
+        print_info "crontab não encontrado. Instalando..."
+        apt-get update -qq >/dev/null 2>&1 && apt-get install -y -qq cron >/dev/null 2>&1
+        systemctl enable cron >/dev/null 2>&1
+        systemctl start cron >/dev/null 2>&1
+        if ! command -v crontab >/dev/null 2>&1; then
+            print_error "Falha ao instalar cron. Instale manualmente:"
+            echo "   apt-get install -y cron && systemctl enable cron && systemctl start cron"
+            echo ""
+            return 1
+        fi
+        print_success "cron instalado e ativado"
     fi
 
     echo ""
